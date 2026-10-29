@@ -80,15 +80,14 @@ fun HomeHeader(username: String, isDarkTheme: Boolean, onAvatarClick: () -> Unit
                         Text("Login", fontWeight = FontWeight.Bold)
                     }
                 } else {
-                    Button(
+                    IconButton(
                         onClick = onAvatarClick,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = Color.White
-                        ),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(headerText.copy(alpha = 0.1f))
                     ) {
-                        Text("Log Out", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Icon(Icons.Default.Person, contentDescription = "Profile", tint = headerText)
                     }
                 }
             }
