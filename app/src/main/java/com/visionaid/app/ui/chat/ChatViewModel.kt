@@ -1,0 +1,352 @@
+package com.visionaid.app.ui.chat
+
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.google.gson.JsonParser
+import com.visionaid.app.data.model.ChatMessageItem
+import com.visionaid.app.data.model.ChatRequest
+import com.visionaid.app.data.model.HardwareCameraRequest
+import com.visionaid.app.data.model.VisionRequest
+import com.visionaid.app.data.remote.SseGhostClickService
+import com.visionaid.app.data.remote.SseHardwareEvent
+import com.visionaid.app.data.remote.VisionApiService
+import com.visionaid.app.domain.router.IntentAction
+import com.visionaid.app.domain.router.RouterEngine
+import com.visionaid.app.util.TtsManager
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import java.util.Locale
+import java.util.UUID
+
+sealed class ChatEvent {
+    data class TriggerNavigation(val destination: String) : ChatEvent()
+    data class TriggerPhoneCamera(val prompt: String) : ChatEvent()
+}
+
+data class ChatMessage(
+    val id: String = UUID.randomUUID().toString(),
+    val sender: String, // "user" or "ai"
+    val text: String,
+    val timestamp: Long = System.currentTimeMillis(),
+    val imageUrl: String? = null
+)
+
+data class ChatUiState(
+    val messages: List<ChatMessage> = emptyList(),
+    val isRecording: Boolean = false,
+    val isProcessing: Boolean = false,
+    val isOpen: Boolean = false
+)
+
+class ChatViewModel(
+    private val apiService: VisionApiService,
+    private val sseService: SseGhostClickService,
+    private val ttsManager: TtsManager,
+    private val vibrator: Vibrator,
+    private val routerEngine: RouterEngine
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(ChatUiState())
+    val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
+
+    private val _chatEvents = MutableSharedFlow<ChatEvent>()
+    val chatEvents: SharedFlow<ChatEvent> = _chatEvents.asSharedFlow()
+
+    private var speechRecognizer: SpeechRecognizer? = null
+
+    init {
+        observeSseEvents()
+    }
+
+    private fun observeSseEvents() {
+        viewModelScope.launch {
+            sseService.events.collect { event ->
+                when (event) {
+                    is SseHardwareEvent.HardwareBtnTouched -> {
+                        vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+                        ttsManager.stop()
+                        _uiState.update { it.copy(isOpen = true, isRecording = true) }
+                    }
+                    is SseHardwareEvent.HardwareBtnReleased -> {
+                        _uiState.update { it.copy(isRecording = false, isProcessing = true) }
+                    }
+                    is SseHardwareEvent.AudioResult -> {
+                        handleAudioResult(event.transcript, event.text)
+                    }
+                }
+            }
+        }
+    }
+
+    private suspend fun handleAudioResult(transcript: String, pregenText: String) {
+        addMessage(ChatMessage(sender = "user", text = transcript))
+        
+        routerEngine.dispatch(transcript, pregenText) { action ->
+            when (action) {
+                is IntentAction.GeneralChat -> {
+                    if (action.pregenResponse.isNullOrBlank()) {
+                        sendMessageInternal(transcript)
+                    } else {
+                        addMessage(ChatMessage(sender = "ai", text = action.pregenResponse))
+                        ttsManager.speak(action.pregenResponse)
+                        _uiState.update { it.copy(isProcessing = false) }
+                    }
+                }
+                is IntentAction.Vision -> {
+                    handleVisionInChat(action.text)
+                }
+                is IntentAction.Navigation -> {
+                    Log.d("ChatViewModel", "Routed to Navigation: ${action.destination}")
+                    _uiState.update { it.copy(isProcessing = false) }
+                    _chatEvents.emit(ChatEvent.TriggerNavigation(action.destination))
+                }
+                is IntentAction.LocationInfo -> {
+                    Log.d("ChatViewModel", "Routed to LocationInfo")
+                    _uiState.update { it.copy(isProcessing = false) }
+                }
+                is IntentAction.PlaceSearch -> {
+                    Log.d("ChatViewModel", "Routed to PlaceSearch")
+                    _uiState.update { it.copy(isProcessing = false) }
+                }
+            }
+        }
+    }
+
+    fun openChat() {
+        _uiState.update { it.copy(isOpen = true) }
+    }
+
+    fun closeChat() {
+        stopListening()
+        _uiState.update { it.copy(isOpen = false) }
+    }
+
+    fun startListening(context: Context) {
+        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
+            Log.e("ChatViewModel", "Speech recognition not available on device")
+            return
+        }
+        ttsManager.stop()
+        _uiState.update { it.copy(isRecording = true) }
+
+        if (speechRecognizer == null) {
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context.applicationContext)
+            speechRecognizer?.setRecognitionListener(object : RecognitionListener {
+                override fun onReadyForSpeech(params: Bundle?) {}
+                override fun onBeginningOfSpeech() {}
+                override fun onRmsChanged(rmsdB: Float) {}
+                override fun onBufferReceived(buffer: ByteArray?) {}
+                override fun onEndOfSpeech() {
+                    _uiState.update { it.copy(isRecording = false, isProcessing = true) }
+                }
+
+                override fun onError(error: Int) {
+                    Log.e("ChatViewModel", "Speech recognizer error: $error")
+                    _uiState.update { it.copy(isRecording = false, isProcessing = false) }
+                }
+
+                override fun onResults(results: Bundle?) {
+                    val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    if (!matches.isNullOrEmpty()) {
+                        val text = matches[0]
+                        sendMessage(text)
+                    } else {
+                        _uiState.update { it.copy(isProcessing = false) }
+                    }
+                }
+
+                override fun onPartialResults(partialResults: Bundle?) {}
+                override fun onEvent(eventType: Int, params: Bundle?) {}
+            })
+        }
+
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        }
+        speechRecognizer?.startListening(intent)
+    }
+
+    fun stopListening() {
+        _uiState.update { it.copy(isRecording = false) }
+        try {
+            speechRecognizer?.stopListening()
+        } catch (e: Exception) {
+            Log.e("ChatViewModel", "Error stopping speech recognizer", e)
+        }
+    }
+
+    fun sendMessage(text: String) {
+        if (text.isBlank()) return
+        addMessage(ChatMessage(sender = "user", text = text))
+        _uiState.update { it.copy(isProcessing = true) }
+        
+        viewModelScope.launch {
+            routerEngine.dispatch(text) { action ->
+                when (action) {
+                    is IntentAction.Vision -> {
+                        handleVisionInChat(action.text)
+                    }
+                    is IntentAction.Navigation -> {
+                        _uiState.update { it.copy(isProcessing = false) }
+                        _chatEvents.emit(ChatEvent.TriggerNavigation(action.destination))
+                    }
+                    else -> {
+                        sendMessageInternal(text)
+                    }
+                }
+            }
+        }
+    }
+
+    fun triggerCameraDirectly() {
+        viewModelScope.launch {
+            handleVisionInChat("Describe what is in front of me.")
+        }
+    }
+
+    private suspend fun handleVisionInChat(prompt: String) {
+        _uiState.update { it.copy(isProcessing = true) }
+        try {
+            val response = withTimeoutOrNull(2000) {
+                apiService.triggerHardwareCamera(HardwareCameraRequest(prompt))
+            }
+            if (response != null && response.isSuccessful && response.body() != null && !response.body()?.image.isNullOrBlank()) {
+                val body = response.body()!!
+                val imageB64 = body.image
+                val desc = body.description ?: "Captured scene image."
+                
+                addMessage(
+                    ChatMessage(
+                        sender = "ai", 
+                        text = desc, 
+                        imageUrl = "data:image/jpeg;base64,$imageB64"
+                    )
+                )
+                ttsManager.speak(desc)
+                _uiState.update { it.copy(isProcessing = false) }
+                return
+            }
+        } catch (e: Exception) {
+            Log.w("ChatViewModel", "Hardware camera unavailable, falling back to silent phone camera", e)
+        }
+
+        // ESP32-CAM is offline -> Automatically trigger silent phone camera capture!
+        _uiState.update { it.copy(isProcessing = false) }
+        _chatEvents.emit(ChatEvent.TriggerPhoneCamera(prompt))
+    }
+
+    fun analyzeLocalPhoneImage(base64Image: String, prompt: String = "Describe what is in front of me.") {
+        _uiState.update { it.copy(isProcessing = true) }
+        viewModelScope.launch {
+            try {
+                val response = withTimeoutOrNull(8000) {
+                    apiService.analyzeVision(VisionRequest(image = base64Image, prompt = prompt, source = "phone"))
+                }
+                if (response != null && response.isSuccessful && response.body() != null) {
+                    val desc = response.body()?.description ?: "I see the captured frame in front of you."
+                    addMessage(
+                        ChatMessage(
+                            sender = "ai",
+                            text = desc,
+                            imageUrl = "data:image/jpeg;base64,$base64Image"
+                        )
+                    )
+                    ttsManager.speak(desc)
+                } else {
+                    addMessage(
+                        ChatMessage(
+                            sender = "ai",
+                            text = "I received your photo but couldn't analyze it right now.",
+                            imageUrl = "data:image/jpeg;base64,$base64Image"
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Error analyzing phone image", e)
+                addMessage(
+                    ChatMessage(
+                        sender = "ai",
+                        text = "I captured your photo but encountered a network error while analyzing.",
+                        imageUrl = "data:image/jpeg;base64,$base64Image"
+                    )
+                )
+            } finally {
+                _uiState.update { it.copy(isProcessing = false) }
+            }
+        }
+    }
+
+    private suspend fun sendMessageInternal(text: String) {
+        try {
+            val history = _uiState.value.messages.map { ChatMessageItem(role = if (it.sender == "user") "user" else "assistant", content = it.text) }
+            val req = ChatRequest(message = text, history = history)
+            val response = apiService.chat(req)
+            if (response.isSuccessful && response.body() != null) {
+                val rawStr = response.body()!!.string()
+                val aiText = try {
+                    val json = JsonParser.parseString(rawStr).asJsonObject
+                    json.get("response")?.asString ?: rawStr
+                } catch (e: Exception) {
+                    rawStr
+                }
+                addMessage(ChatMessage(sender = "ai", text = aiText))
+                ttsManager.speak(aiText)
+            } else {
+                addMessage(ChatMessage(sender = "ai", text = "Sorry, I couldn't reach the server."))
+            }
+        } catch (e: Exception) {
+            Log.e("ChatViewModel", "Error sending chat message", e)
+            addMessage(ChatMessage(sender = "ai", text = "Network error occurred."))
+        } finally {
+            _uiState.update { it.copy(isProcessing = false) }
+        }
+    }
+
+    private fun addMessage(message: ChatMessage) {
+        _uiState.update { it.copy(messages = it.messages + message) }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        try {
+            speechRecognizer?.destroy()
+            speechRecognizer = null
+        } catch (e: Exception) {
+            // ignore
+        }
+    }
+}
+
+class ChatViewModelFactory(
+    private val apiService: VisionApiService,
+    private val sseService: SseGhostClickService,
+    private val ttsManager: TtsManager,
+    private val vibrator: Vibrator,
+    private val routerEngine: RouterEngine
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ChatViewModel(apiService, sseService, ttsManager, vibrator, routerEngine) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
