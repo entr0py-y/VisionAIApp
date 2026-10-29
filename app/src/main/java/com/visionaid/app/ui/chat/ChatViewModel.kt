@@ -138,6 +138,14 @@ class ChatViewModel(
         _uiState.update { it.copy(isOpen = false) }
     }
 
+    fun addMessage(message: ChatMessage) {
+        _uiState.update { it.copy(messages = it.messages + message) }
+    }
+
+    fun setProcessing(processing: Boolean) {
+        _uiState.update { it.copy(isProcessing = processing) }
+    }
+
     fun startListening(context: Context) {
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
             Log.e("ChatViewModel", "Speech recognition not available on device")
@@ -253,41 +261,24 @@ class ChatViewModel(
         _chatEvents.emit(ChatEvent.TriggerPhoneCamera(prompt))
     }
 
-    fun analyzeLocalPhoneImage(base64Image: String, prompt: String = "Describe what is in front of me.") {
+    fun analyzeLocalPhoneImage(base64: String, prompt: String = "Describe what is in front of me") {
+        val dataUri = if (base64.startsWith("data:")) base64 else "data:image/jpeg;base64,$base64"
         _uiState.update { it.copy(isProcessing = true) }
+
         viewModelScope.launch {
             try {
-                val response = withTimeoutOrNull(8000) {
-                    apiService.analyzeVision(VisionRequest(image = base64Image, prompt = prompt, source = "phone"))
-                }
-                if (response != null && response.isSuccessful && response.body() != null) {
-                    val desc = response.body()?.description ?: "I see the captured frame in front of you."
-                    addMessage(
-                        ChatMessage(
-                            sender = "ai",
-                            text = desc,
-                            imageUrl = "data:image/jpeg;base64,$base64Image"
-                        )
-                    )
+                val response = apiService.analyzeVision(
+                    VisionRequest(image = dataUri, prompt = prompt, source = "phone")
+                )
+                if (response.isSuccessful && response.body() != null) {
+                    val desc = response.body()?.description ?: "No description available."
+                    addMessage(ChatMessage(sender = "ai", text = desc, imageUrl = dataUri))
                     ttsManager.speak(desc)
                 } else {
-                    addMessage(
-                        ChatMessage(
-                            sender = "ai",
-                            text = "I received your photo but couldn't analyze it right now.",
-                            imageUrl = "data:image/jpeg;base64,$base64Image"
-                        )
-                    )
+                    addMessage(ChatMessage(sender = "ai", text = "Could not analyze the scene."))
                 }
             } catch (e: Exception) {
-                Log.e("ChatViewModel", "Error analyzing phone image", e)
-                addMessage(
-                    ChatMessage(
-                        sender = "ai",
-                        text = "I captured your photo but encountered a network error while analyzing.",
-                        imageUrl = "data:image/jpeg;base64,$base64Image"
-                    )
-                )
+                addMessage(ChatMessage(sender = "ai", text = "Network error analyzing image."))
             } finally {
                 _uiState.update { it.copy(isProcessing = false) }
             }
@@ -318,10 +309,6 @@ class ChatViewModel(
         } finally {
             _uiState.update { it.copy(isProcessing = false) }
         }
-    }
-
-    private fun addMessage(message: ChatMessage) {
-        _uiState.update { it.copy(messages = it.messages + message) }
     }
 
     override fun onCleared() {

@@ -79,12 +79,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun getVibratorInstance(): Vibrator {
-        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
             vibratorManager.defaultVibrator
         } else {
             @Suppress("DEPRECATION")
-            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            getSystemService(VIBRATOR_SERVICE) as Vibrator
         }
     }
 
@@ -94,7 +94,7 @@ class MainActivity : ComponentActivity() {
         
         ttsManager = TtsManager(this)
 
-        // Runtime Permissions Request
+        // Runtime Permissions Request (Camera, Audio, Location)
         val requestPermissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
         ) { permissions ->
@@ -102,6 +102,7 @@ class MainActivity : ComponentActivity() {
         }
 
         val permissionsToRequest = mutableListOf(
+            Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION

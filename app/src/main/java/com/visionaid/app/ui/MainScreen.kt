@@ -1,5 +1,6 @@
 package com.visionaid.app.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -66,6 +67,23 @@ fun MainScreen(
     
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    // Back Handlers: Intercept system Back button / gestures to close open screens cleanly instead of quitting app
+    BackHandler(enabled = chatUiState.isOpen) {
+        chatViewModel.closeChat()
+    }
+    BackHandler(enabled = showVisionSheet) {
+        showVisionSheet = false
+    }
+    BackHandler(enabled = showMobilitySheet) {
+        showMobilitySheet = false
+    }
+    BackHandler(enabled = showFamilySheet) {
+        showFamilySheet = false
+    }
+    BackHandler(enabled = uiState.showAuthModal) {
+        viewModel.toggleAuthModal()
+    }
+
     // Intercept Chat Events mapping hardware intents to Screens natively!
     LaunchedEffect(Unit) {
         chatViewModel.chatEvents.collect { event ->
@@ -127,7 +145,7 @@ fun MainScreen(
                 if (selectedTab == 0) {
                     HomeScreen(
                         uiState = uiState,
-                        onAvatarClick = { 
+                        onAvatarClick = {
                             if (uiState.currentUser != "User") {
                                 viewModel.logout()
                             } else {

@@ -1,10 +1,7 @@
 package com.visionaid.app.ui.chat
 
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -29,10 +26,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.io.ByteArrayOutputStream
+import com.visionaid.app.util.SilentCameraManager
+import kotlinx.coroutines.launch
 
 @Composable
 fun AiChatScreen(
@@ -43,21 +42,31 @@ fun AiChatScreen(
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val coroutineScope = rememberCoroutineScope()
     var inputText by remember { mutableStateOf("") }
-    var lastPrompt by remember { mutableStateOf("Describe what is in front of me.") }
 
-    // Dock background colors matching MainScreen bottom dock exactly: #E8E8E3 (Light) / #161616 (Dark)
+    // Dock background colors: #E8E8E3 (Light) / #161616 (Dark)
     val dockColor = if (isDarkTheme) Color(0xFF161616) else Color(0xFFE8E8E3)
     val inputBarColor = if (isDarkTheme) Color(0xFF252525) else Color(0xFFFFFFFF)
     val contentColor = if (isDarkTheme) Color.White else Color.Black
 
-    // System Camera Launcher Fallback
-    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
-        if (bitmap != null) {
-            val outputStream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-            val base64 = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
-            viewModel.analyzeLocalPhoneImage(base64, lastPrompt)
+    // Observe Chat Events for Silent CameraX Frame Capture
+    LaunchedEffect(Unit) {
+        viewModel.chatEvents.collect { event ->
+            when (event) {
+                is ChatEvent.TriggerPhoneCamera -> {
+                    coroutineScope.launch {
+                        val base64Frame = SilentCameraManager.captureFrameToTempFile(context, lifecycleOwner)
+                        if (!base64Frame.isNullOrBlank()) {
+                            viewModel.analyzeLocalPhoneImage(base64Frame, event.prompt)
+                        } else {
+                            viewModel.sendMessage(event.prompt)
+                        }
+                    }
+                }
+                else -> {}
+            }
         }
     }
 
@@ -69,7 +78,6 @@ fun AiChatScreen(
     }
 
     // Exact Insets Calculation: Flush right above soft keyboard when open, or above gesture bar when closed
-    val density = LocalDensity.current
     val imeBottom = WindowInsets.ime.asPaddingValues().calculateBottomPadding()
     val navBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val bottomPadding = if (imeBottom > 0.dp) imeBottom else navBottom
@@ -121,7 +129,7 @@ fun AiChatScreen(
             }
         }
 
-        // Bottom Message Bar: END-TO-END full width from left edge to right edge, sitting flush on top of keyboard
+        // Bottom Message Bar: Flush on top of soft keyboard or gesture bar
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -137,11 +145,17 @@ fun AiChatScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Camera Button
+                // Camera Button (Silent CameraX Background Capture to Temp File)
                 IconButton(
                     onClick = {
-                        lastPrompt = "Describe what is in front of me."
-                        cameraLauncher.launch(null)
+                        coroutineScope.launch {
+                            val base64Frame = SilentCameraManager.captureFrameToTempFile(context, lifecycleOwner)
+                            if (!base64Frame.isNullOrBlank()) {
+                                viewModel.analyzeLocalPhoneImage(base64Frame, "Describe what is in front of me.")
+                            } else {
+                                viewModel.sendMessage("Describe what is in front of me.")
+                            }
+                        }
                     }
                 ) {
                     Icon(
@@ -188,11 +202,37 @@ fun AiChatScreen(
                     )
                 }
 
-                // Send Button
+                // Send Button with Vision Query Interception
                 IconButton(
                     onClick = {
-                        viewModel.sendMessage(inputText)
+                        val textToSend = inputText.trim()
                         inputText = ""
+
+                        val lower = textToSend.lowercase()
+                        val isVisionQuery = lower.contains("infront") ||
+                                lower.contains("in front") ||
+                                lower.contains("see") ||
+                                lower.contains("look") ||
+                                lower.contains("describe") ||
+                                lower.contains("camera") ||
+                                lower.contains("what is in front") ||
+                                lower.contains("whats in front")
+
+                        if (isVisionQuery) {
+                            viewModel.addMessage(ChatMessage(sender = "user", text = textToSend))
+                            viewModel.setProcessing(true)
+
+                            coroutineScope.launch {
+                                val base64Frame = SilentCameraManager.captureFrameToTempFile(context, lifecycleOwner)
+                                if (!base64Frame.isNullOrBlank()) {
+                                    viewModel.analyzeLocalPhoneImage(base64Frame, textToSend)
+                                } else {
+                                    viewModel.sendMessage(textToSend)
+                                }
+                            }
+                        } else {
+                            viewModel.sendMessage(textToSend)
+                        }
                     },
                     enabled = inputText.isNotBlank() && !uiState.isProcessing
                 ) {
