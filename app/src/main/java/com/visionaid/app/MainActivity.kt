@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
 
     // ViewModels generated dynamically tracking process dependencies
     private val homeViewModel: HomeViewModel by viewModels {
-        HomeViewModelFactory(healthRepo, NetworkClient.apiService, sseService)
+        HomeViewModelFactory(healthRepo, NetworkClient.apiService, sseService, applicationContext)
     }
 
     private val visionViewModel: VisionViewModel by viewModels {

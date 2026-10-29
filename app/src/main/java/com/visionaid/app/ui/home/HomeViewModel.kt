@@ -1,5 +1,7 @@
 package com.visionaid.app.ui.home
 
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -31,10 +33,15 @@ data class HomeUiState(
 class HomeViewModel(
     private val healthRepo: DeviceHealthRepository,
     private val apiService: VisionApiService,
-    private val sseService: SseGhostClickService
+    private val sseService: SseGhostClickService,
+    private val context: Context
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HomeUiState())
+    private val prefs: SharedPreferences = context.getSharedPreferences("vision_aid_prefs", Context.MODE_PRIVATE)
+
+    private val _uiState = MutableStateFlow(
+        HomeUiState(currentUser = prefs.getString("currentUser", "User") ?: "User")
+    )
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
@@ -75,6 +82,10 @@ class HomeViewModel(
                 if (response.isSuccessful) {
                     val body = response.body()
                     val userName = body?.name ?: body?.user?.username ?: user
+                    
+                    // Persist session across app restarts
+                    prefs.edit().putString("currentUser", userName).apply()
+
                     _uiState.update { 
                         it.copy(
                             isLoading = false,
@@ -99,6 +110,10 @@ class HomeViewModel(
                 if (response.isSuccessful) {
                     val body = response.body()
                     val userName = body?.name ?: body?.user?.username ?: user
+                    
+                    // Persist session across app restarts
+                    prefs.edit().putString("currentUser", userName).apply()
+
                     _uiState.update { 
                         it.copy(
                             isLoading = false,
@@ -128,6 +143,7 @@ class HomeViewModel(
     }
 
     fun logout() {
+        prefs.edit().putString("currentUser", "User").apply()
         _uiState.update { it.copy(currentUser = "User") }
     }
 
@@ -141,12 +157,13 @@ class HomeViewModel(
 class HomeViewModelFactory(
     private val healthRepo: DeviceHealthRepository,
     private val apiService: VisionApiService,
-    private val sseService: SseGhostClickService
+    private val sseService: SseGhostClickService,
+    private val context: Context
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return HomeViewModel(healthRepo, apiService, sseService) as T
+            return HomeViewModel(healthRepo, apiService, sseService, context) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
