@@ -21,6 +21,46 @@ class DeviceHealthRepository(private val apiService: VisionApiService) {
     private val scope = CoroutineScope(Dispatchers.IO + Job())
     private var isPolling = false
 
+    private var lastLocalMicSeen: Long = 0L
+    private var lastLocalCamSeen: Long = 0L
+    private var latestUltrasonic: Float? = null
+    private var latestPir: Boolean? = null
+    private var lastRemoteHealth: HealthResponse? = null
+
+    fun markMicOnline() {
+        lastLocalMicSeen = System.currentTimeMillis()
+        updateConsolidatedHealth()
+    }
+
+    fun markCamOnline() {
+        lastLocalCamSeen = System.currentTimeMillis()
+        updateConsolidatedHealth()
+    }
+
+    fun updateSensors(dist: Float?, pir: Boolean?) {
+        lastLocalMicSeen = System.currentTimeMillis()
+        if (dist != null) latestUltrasonic = dist
+        if (pir != null) latestPir = pir
+        updateConsolidatedHealth()
+    }
+
+    private fun updateConsolidatedHealth() {
+        val now = System.currentTimeMillis()
+        val localMicOnline = (now - lastLocalMicSeen) < 10000L
+        val localCamOnline = (now - lastLocalCamSeen) < 10000L
+
+        val isMic = localMicOnline || (lastRemoteHealth?.micOnline == true)
+        val isCam = localCamOnline || (lastRemoteHealth?.camOnline == true)
+
+        _healthState.value = HealthResponse(
+            micOnline = isMic,
+            camOnline = isCam,
+            hardwareMode = if (localMicOnline || localCamOnline) "local_hub" else (lastRemoteHealth?.hardwareMode ?: "STANDBY"),
+            ultrasonicDist = latestUltrasonic ?: lastRemoteHealth?.ultrasonicDist,
+            pirMotion = latestPir ?: lastRemoteHealth?.pirMotion
+        )
+    }
+
     fun startPolling() {
         if (isPolling) return
         isPolling = true
@@ -29,13 +69,14 @@ class DeviceHealthRepository(private val apiService: VisionApiService) {
                 try {
                     val response = apiService.getHealth()
                     if (response.isSuccessful) {
-                        _healthState.value = response.body()
+                        lastRemoteHealth = response.body()
                     } else {
                         Log.e("HealthRepo", "Error fetching health: ${response.code()}")
                     }
                 } catch (e: Exception) {
                     Log.e("HealthRepo", "Exception fetching health", e)
                 }
+                updateConsolidatedHealth()
                 delay(3000)
             }
         }

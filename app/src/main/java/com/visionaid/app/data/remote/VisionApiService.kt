@@ -1,10 +1,12 @@
 package com.visionaid.app.data.remote
 
 import com.visionaid.app.data.model.*
+import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface VisionApiService {
@@ -40,4 +42,10 @@ interface VisionApiService {
 
     @POST("api/sos/send")
     suspend fun sendSos(@Body body: SosRequest): Response<Map<String, Any>>
+
+    @POST("api/pi/audio-input")
+    suspend fun uploadAudio(
+        @Header("Content-Type") contentType: String = "application/octet-stream",
+        @Body body: RequestBody
+    ): Response<ResponseBody>
 }

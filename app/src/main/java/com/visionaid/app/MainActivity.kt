@@ -2,6 +2,7 @@ package com.visionaid.app
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.Vibrator
@@ -14,6 +15,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.google.android.gms.location.LocationServices
+import com.visionaid.app.data.remote.LocalHardwareHubService
 import com.visionaid.app.data.remote.NetworkClient
 import com.visionaid.app.data.remote.SseGhostClickService
 import com.visionaid.app.data.repository.DeviceHealthRepository
@@ -94,6 +96,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         
         ttsManager = TtsManager(this)
+
+        // Start Local Hardware Hub Service (Embedded WebSocket Server on port 8888)
+        val hubIntent = Intent(this, LocalHardwareHubService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(hubIntent)
+        } else {
+            startService(hubIntent)
+        }
 
         // Runtime Permissions Request (Camera, Audio, Location)
         val requestPermissionLauncher = registerForActivityResult(

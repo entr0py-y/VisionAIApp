@@ -17,6 +17,8 @@ import com.visionaid.app.data.model.ChatMessageItem
 import com.visionaid.app.data.model.ChatRequest
 import com.visionaid.app.data.model.HardwareCameraRequest
 import com.visionaid.app.data.model.VisionRequest
+import com.visionaid.app.data.remote.HardwareIntakeEvent
+import com.visionaid.app.data.remote.LocalHardwareHubService
 import com.visionaid.app.data.remote.SseGhostClickService
 import com.visionaid.app.data.remote.SseHardwareEvent
 import com.visionaid.app.data.remote.VisionApiService
@@ -30,9 +32,12 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.Locale
 import java.util.UUID
 
@@ -72,10 +77,70 @@ class ChatViewModel(
     val chatEvents: SharedFlow<ChatEvent> = _chatEvents.asSharedFlow()
 
     private var speechRecognizer: SpeechRecognizer? = null
+    private var lastProcessedTranscript: String = ""
+    private var lastProcessedTime: Long = 0L
 
     init {
         observeSseEvents()
         observeHardwareRecordingState()
+        observeHardwareHubEvents()
+    }
+
+    private fun observeHardwareHubEvents() {
+        viewModelScope.launch {
+            LocalHardwareHubService.hardwareEvents.collect { event ->
+                when (event) {
+                    is HardwareIntakeEvent.MicPing -> {
+                        healthRepo?.markMicOnline()
+                    }
+                    is HardwareIntakeEvent.CamPing -> {
+                        healthRepo?.markCamOnline()
+                    }
+                    is HardwareIntakeEvent.SensorTelemetry -> {
+                        healthRepo?.updateSensors(event.distanceCm, event.pirMotion)
+                    }
+                    is HardwareIntakeEvent.PcmAudioReceived -> {
+                        healthRepo?.markMicOnline()
+                        handleLocalHardwareAudio(event.pcmData)
+                    }
+                    is HardwareIntakeEvent.CameraFrameReceived -> {
+                        healthRepo?.markCamOnline()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun handleLocalHardwareAudio(pcmData: ByteArray) {
+        _uiState.update { it.copy(isOpen = true, isRecording = false, isProcessing = true) }
+        vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
+        ttsManager.stop()
+        viewModelScope.launch {
+            try {
+                val mediaType = "application/octet-stream".toMediaTypeOrNull()
+                val requestBody = pcmData.toRequestBody(mediaType)
+                val response = apiService.uploadAudio("application/octet-stream", requestBody)
+                if (response.isSuccessful && response.body() != null) {
+                    try {
+                        val rawStr = response.body()!!.string()
+                        val json = JsonParser.parseString(rawStr).asJsonObject
+                        val text = json.get("text")?.asString
+                        val transcript = json.get("transcript")?.asString
+                        if (!transcript.isNullOrBlank() && !text.isNullOrBlank()) {
+                            handleAudioResult(transcript, text)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("ChatViewModel", "Error parsing upload response", e)
+                    }
+                } else {
+                    Log.e("ChatViewModel", "Hardware audio upload failed: ${response.code()}")
+                    _uiState.update { it.copy(isProcessing = false) }
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Exception uploading hardware audio", e)
+                _uiState.update { it.copy(isProcessing = false) }
+            }
+        }
     }
 
     private fun observeHardwareRecordingState() {
@@ -107,6 +172,13 @@ class ChatViewModel(
     }
 
     private suspend fun handleAudioResult(transcript: String, pregenText: String) {
+        val now = System.currentTimeMillis()
+        if (transcript.equals(lastProcessedTranscript, ignoreCase = true) && (now - lastProcessedTime) < 3000L) {
+            return
+        }
+        lastProcessedTranscript = transcript
+        lastProcessedTime = now
+
         addMessage(ChatMessage(sender = "user", text = transcript))
         
         routerEngine.dispatch(transcript, pregenText) { action ->
@@ -245,11 +317,29 @@ class ChatViewModel(
         _uiState.update { it.copy(isProcessing = true) }
         val isCamOnline = healthRepo?.healthState?.value?.camOnline == true
 
-        // Priority 1: ESP32-CAM if online
+        // Priority 1: Local ESP32-CAM if online
         if (isCamOnline) {
             try {
-                Log.d("ChatViewModel", "ESP32-CAM is online. Triggering hardware camera...")
-                val response = withTimeoutOrNull(15000) {
+                Log.d("ChatViewModel", "ESP32-CAM is online. Triggering local hardware camera...")
+                LocalHardwareHubService.triggerCameraCapture()
+
+                val frameEvent = withTimeoutOrNull(8000) {
+                    LocalHardwareHubService.hardwareEvents.first { it is HardwareIntakeEvent.CameraFrameReceived }
+                } as? HardwareIntakeEvent.CameraFrameReceived
+
+                if (frameEvent != null && !frameEvent.base64Jpeg.isNullOrBlank()) {
+                    analyzeLocalPhoneImage(frameEvent.base64Jpeg, prompt)
+                    return
+                } else {
+                    Log.w("ChatViewModel", "Timeout waiting for local ESP32-CAM frame, trying remote fallback...")
+                }
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Local ESP32-CAM trigger failed, falling back...", e)
+            }
+
+            // Fallback to cloud trigger if available
+            try {
+                val response = withTimeoutOrNull(10000) {
                     apiService.triggerHardwareCamera(HardwareCameraRequest(prompt))
                 }
                 if (response != null && response.isSuccessful && response.body() != null && !response.body()?.description.isNullOrBlank()) {
@@ -264,7 +354,7 @@ class ChatViewModel(
                     return
                 }
             } catch (e: Exception) {
-                Log.w("ChatViewModel", "ESP32-CAM trigger failed, falling back to phone camera", e)
+                Log.w("ChatViewModel", "Remote ESP32-CAM trigger failed", e)
             }
         }
 
