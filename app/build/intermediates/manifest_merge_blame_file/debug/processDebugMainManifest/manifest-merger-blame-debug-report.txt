@@ -15,200 +15,217 @@
 13    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 13-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:7:5-79
 13-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:7:22-76
-14    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-14-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:8:5-71
-14-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:8:22-68
-15    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-15-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:9:5-79
-15-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:9:22-76
-16    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-16-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:10:5-81
-16-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:10:22-78
-17    <uses-permission android:name="android.permission.VIBRATE" />
-17-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:11:5-66
-17-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:11:22-63
-18
-19    <uses-feature
-19-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:26:5-28:35
-20        android:glEsVersion="0x00020000"
-20-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:27:9-41
-21        android:required="true" />
-21-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:28:9-32
-22
-23    <queries>
-23-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:30:5-34:15
-24
-25        <!-- Needs to be explicitly declared on Android R+ -->
-26        <package android:name="com.google.android.apps.maps" />
-26-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:33:9-64
-26-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:33:18-61
-27    </queries>
-28
-29    <permission
-29-->[androidx.core:core:1.12.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/3a1b267ec9cfd1ed00693fcc5893c24b/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
-30        android:name="com.visionaid.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-30-->[androidx.core:core:1.12.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/3a1b267ec9cfd1ed00693fcc5893c24b/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
-31        android:protectionLevel="signature" />
-31-->[androidx.core:core:1.12.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/3a1b267ec9cfd1ed00693fcc5893c24b/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
-32
-33    <uses-permission android:name="com.visionaid.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-33-->[androidx.core:core:1.12.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/3a1b267ec9cfd1ed00693fcc5893c24b/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
-33-->[androidx.core:core:1.12.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/3a1b267ec9cfd1ed00693fcc5893c24b/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
-34
-35    <application
-35-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:13:5-31:19
-36        android:allowBackup="true"
-36-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:14:9-35
-37        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-37-->[androidx.core:core:1.12.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/3a1b267ec9cfd1ed00693fcc5893c24b/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
-38        android:debuggable="true"
-39        android:extractNativeLibs="false"
-40        android:icon="@mipmap/ic_launcher"
-40-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:15:9-43
-41        android:label="Vision AID"
-41-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:16:9-35
-42        android:roundIcon="@mipmap/ic_launcher_round"
-42-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:17:9-54
-43        android:supportsRtl="true"
+14    <uses-permission android:name="android.permission.CAMERA" />
+14-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:8:5-65
+14-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:8:22-62
+15    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+15-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:9:5-71
+15-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:9:22-68
+16    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+16-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:10:5-79
+16-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:10:22-76
+17    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+17-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:11:5-81
+17-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:11:22-78
+18    <uses-permission android:name="android.permission.VIBRATE" />
+18-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:12:5-66
+18-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:12:22-63
+19
+20    <uses-feature
+20-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:14:5-85
+21        android:name="android.hardware.camera"
+21-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:14:19-57
+22        android:required="false" />
+22-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:14:58-82
+23    <uses-feature
+23-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:15:5-95
+24        android:name="android.hardware.camera.autofocus"
+24-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:15:19-67
+25        android:required="false" />
+25-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:15:68-92
+26    <uses-feature
+26-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:26:5-28:35
+27        android:glEsVersion="0x00020000"
+27-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:27:9-41
+28        android:required="true" />
+28-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:28:9-32
+29
+30    <queries>
+30-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:30:5-34:15
+31
+32        <!-- Needs to be explicitly declared on Android R+ -->
+33        <package android:name="com.google.android.apps.maps" />
+33-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:33:9-64
+33-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:33:18-61
+34    </queries>
+35
+36    <permission
+36-->[androidx.core:core:1.12.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/3a1b267ec9cfd1ed00693fcc5893c24b/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+37        android:name="com.visionaid.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+37-->[androidx.core:core:1.12.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/3a1b267ec9cfd1ed00693fcc5893c24b/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+38        android:protectionLevel="signature" />
+38-->[androidx.core:core:1.12.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/3a1b267ec9cfd1ed00693fcc5893c24b/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+39
+40    <uses-permission android:name="com.visionaid.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+40-->[androidx.core:core:1.12.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/3a1b267ec9cfd1ed00693fcc5893c24b/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+40-->[androidx.core:core:1.12.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/3a1b267ec9cfd1ed00693fcc5893c24b/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+41
+42    <application
+42-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:17:5-36:19
+43        android:allowBackup="true"
 43-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:18:9-35
-44        android:theme="@android:style/Theme.Material.Light.NoActionBar"
-44-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:19:9-72
-45        android:usesCleartextTraffic="false" >
-45-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:20:9-45
-46        <activity
-46-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:22:9-29:20
-47            android:name="com.visionaid.app.MainActivity"
-47-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:23:13-41
-48            android:exported="true" >
-48-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:24:13-36
-49            <intent-filter>
-49-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:25:13-28:29
-50                <action android:name="android.intent.action.MAIN" />
-50-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:26:17-69
-50-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:26:25-66
-51
-52                <category android:name="android.intent.category.LAUNCHER" />
-52-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:27:17-77
-52-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:27:27-74
-53            </intent-filter>
-54        </activity>
-55
-56        <service
-56-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:24:9-33:19
-57            android:name="androidx.camera.core.impl.MetadataHolderService"
-57-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:25:13-75
-58            android:enabled="false"
-58-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:26:13-36
-59            android:exported="false" >
-59-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:27:13-37
-60            <meta-data
-60-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:30:13-32:89
-61                android:name="androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER"
-61-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:31:17-103
-62                android:value="androidx.camera.camera2.Camera2Config$DefaultProvider" />
-62-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:32:17-86
-63        </service> <!-- Needs to be explicitly declared on P+ -->
-64        <uses-library
-64-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:39:9-41:40
-65            android:name="org.apache.http.legacy"
-65-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:40:13-50
-66            android:required="false" />
-66-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:41:13-37
-67
-68        <activity
-68-->[com.google.android.gms:play-services-base:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ed5ee414381b21f82d86d986f08ea38f/transformed/play-services-base-18.3.0/AndroidManifest.xml:20:9-22:45
-69            android:name="com.google.android.gms.common.api.GoogleApiActivity"
-69-->[com.google.android.gms:play-services-base:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ed5ee414381b21f82d86d986f08ea38f/transformed/play-services-base-18.3.0/AndroidManifest.xml:20:19-85
-70            android:exported="false"
-70-->[com.google.android.gms:play-services-base:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ed5ee414381b21f82d86d986f08ea38f/transformed/play-services-base-18.3.0/AndroidManifest.xml:22:19-43
-71            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-71-->[com.google.android.gms:play-services-base:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ed5ee414381b21f82d86d986f08ea38f/transformed/play-services-base-18.3.0/AndroidManifest.xml:21:19-78
-72
-73        <meta-data
-73-->[com.google.android.gms:play-services-basement:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/c77b09da0eda982ac353a181a6af5942/transformed/play-services-basement-18.3.0/AndroidManifest.xml:21:9-23:69
-74            android:name="com.google.android.gms.version"
-74-->[com.google.android.gms:play-services-basement:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/c77b09da0eda982ac353a181a6af5942/transformed/play-services-basement-18.3.0/AndroidManifest.xml:22:13-58
-75            android:value="@integer/google_play_services_version" />
-75-->[com.google.android.gms:play-services-basement:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/c77b09da0eda982ac353a181a6af5942/transformed/play-services-basement-18.3.0/AndroidManifest.xml:23:13-66
-76
-77        <provider
-77-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
-78            android:name="androidx.startup.InitializationProvider"
-78-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
-79            android:authorities="com.visionaid.app.androidx-startup"
-79-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
-80            android:exported="false" >
-80-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
-81            <meta-data
-81-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
-82                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-82-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
-83                android:value="androidx.startup" />
-83-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
-84            <meta-data
-84-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/260cc699ce173fea4ca433b73ce1c687/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:29:13-31:52
-85                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-85-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/260cc699ce173fea4ca433b73ce1c687/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:30:17-78
-86                android:value="androidx.startup" />
-86-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/260cc699ce173fea4ca433b73ce1c687/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:31:17-49
-87            <meta-data
-87-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
-88                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-88-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
-89                android:value="androidx.startup" />
-89-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
-90        </provider>
-91
-92        <activity
-92-->[androidx.compose.ui:ui-test-manifest:1.6.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/2ccef86485f3b5cf13142b5fe07aca97/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:23:9-25:39
-93            android:name="androidx.activity.ComponentActivity"
-93-->[androidx.compose.ui:ui-test-manifest:1.6.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/2ccef86485f3b5cf13142b5fe07aca97/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:24:13-63
-94            android:exported="true" />
-94-->[androidx.compose.ui:ui-test-manifest:1.6.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/2ccef86485f3b5cf13142b5fe07aca97/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:25:13-36
-95        <activity
-95-->[androidx.compose.ui:ui-tooling-android:1.6.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/6c57e0f533739b432b98a9089e68e290/transformed/ui-tooling-release/AndroidManifest.xml:23:9-25:39
-96            android:name="androidx.compose.ui.tooling.PreviewActivity"
-96-->[androidx.compose.ui:ui-tooling-android:1.6.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/6c57e0f533739b432b98a9089e68e290/transformed/ui-tooling-release/AndroidManifest.xml:24:13-71
-97            android:exported="true" />
-97-->[androidx.compose.ui:ui-tooling-android:1.6.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/6c57e0f533739b432b98a9089e68e290/transformed/ui-tooling-release/AndroidManifest.xml:25:13-36
-98
-99        <receiver
-99-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
-100            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-100-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
-101            android:directBootAware="false"
-101-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
-102            android:enabled="true"
-102-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
-103            android:exported="true"
-103-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
-104            android:permission="android.permission.DUMP" >
-104-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
-105            <intent-filter>
-105-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
-106                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-106-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
-106-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
-107            </intent-filter>
-108            <intent-filter>
-108-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
-109                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-109-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
-109-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
-110            </intent-filter>
-111            <intent-filter>
-111-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
-112                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-112-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
-112-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
-113            </intent-filter>
-114            <intent-filter>
-114-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
-115                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-115-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
-115-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
-116            </intent-filter>
-117        </receiver>
-118    </application>
-119
-120</manifest>
+44        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+44-->[androidx.core:core:1.12.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/3a1b267ec9cfd1ed00693fcc5893c24b/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+45        android:debuggable="true"
+46        android:extractNativeLibs="false"
+47        android:icon="@mipmap/ic_launcher"
+47-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:19:9-43
+48        android:label="Vision AID"
+48-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:20:9-35
+49        android:roundIcon="@mipmap/ic_launcher_round"
+49-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:21:9-54
+50        android:supportsRtl="true"
+50-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:22:9-35
+51        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+51-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:23:9-72
+52        android:usesCleartextTraffic="false" >
+52-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:24:9-45
+53        <activity
+53-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:26:9-34:20
+54            android:name="com.visionaid.app.MainActivity"
+54-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:27:13-41
+55            android:exported="true"
+55-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:28:13-36
+56            android:windowSoftInputMode="adjustResize" >
+56-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:29:13-55
+57            <intent-filter>
+57-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:30:13-33:29
+58                <action android:name="android.intent.action.MAIN" />
+58-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:31:17-69
+58-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:31:25-66
+59
+60                <category android:name="android.intent.category.LAUNCHER" />
+60-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:32:17-77
+60-->/Users/erenyeager/Desktop/VisionAIdApp/app/src/main/AndroidManifest.xml:32:27-74
+61            </intent-filter>
+62        </activity>
+63
+64        <service
+64-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:24:9-33:19
+65            android:name="androidx.camera.core.impl.MetadataHolderService"
+65-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:25:13-75
+66            android:enabled="false"
+66-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:26:13-36
+67            android:exported="false" >
+67-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:27:13-37
+68            <meta-data
+68-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:30:13-32:89
+69                android:name="androidx.camera.core.impl.MetadataHolderService.DEFAULT_CONFIG_PROVIDER"
+69-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:31:17-103
+70                android:value="androidx.camera.camera2.Camera2Config$DefaultProvider" />
+70-->[androidx.camera:camera-camera2:1.3.2] /Users/erenyeager/.gradle/caches/9.4.1/transforms/307d93e9d8d5cb595225e458cc2ab5fa/transformed/camera-camera2-1.3.2/AndroidManifest.xml:32:17-86
+71        </service> <!-- Needs to be explicitly declared on P+ -->
+72        <uses-library
+72-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:39:9-41:40
+73            android:name="org.apache.http.legacy"
+73-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:40:13-50
+74            android:required="false" />
+74-->[com.google.android.gms:play-services-maps:18.2.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/db6127636ff7e174865a427d8206d9be/transformed/play-services-maps-18.2.0/AndroidManifest.xml:41:13-37
+75
+76        <activity
+76-->[com.google.android.gms:play-services-base:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ed5ee414381b21f82d86d986f08ea38f/transformed/play-services-base-18.3.0/AndroidManifest.xml:20:9-22:45
+77            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+77-->[com.google.android.gms:play-services-base:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ed5ee414381b21f82d86d986f08ea38f/transformed/play-services-base-18.3.0/AndroidManifest.xml:20:19-85
+78            android:exported="false"
+78-->[com.google.android.gms:play-services-base:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ed5ee414381b21f82d86d986f08ea38f/transformed/play-services-base-18.3.0/AndroidManifest.xml:22:19-43
+79            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+79-->[com.google.android.gms:play-services-base:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ed5ee414381b21f82d86d986f08ea38f/transformed/play-services-base-18.3.0/AndroidManifest.xml:21:19-78
+80
+81        <meta-data
+81-->[com.google.android.gms:play-services-basement:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/c77b09da0eda982ac353a181a6af5942/transformed/play-services-basement-18.3.0/AndroidManifest.xml:21:9-23:69
+82            android:name="com.google.android.gms.version"
+82-->[com.google.android.gms:play-services-basement:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/c77b09da0eda982ac353a181a6af5942/transformed/play-services-basement-18.3.0/AndroidManifest.xml:22:13-58
+83            android:value="@integer/google_play_services_version" />
+83-->[com.google.android.gms:play-services-basement:18.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/c77b09da0eda982ac353a181a6af5942/transformed/play-services-basement-18.3.0/AndroidManifest.xml:23:13-66
+84
+85        <provider
+85-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+86            android:name="androidx.startup.InitializationProvider"
+86-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
+87            android:authorities="com.visionaid.app.androidx-startup"
+87-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
+88            android:exported="false" >
+88-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
+89            <meta-data
+89-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+90                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+90-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
+91                android:value="androidx.startup" />
+91-->[androidx.emoji2:emoji2:1.3.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/da9f9722d0ef7f97cd70ec19a1d58880/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
+92            <meta-data
+92-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/260cc699ce173fea4ca433b73ce1c687/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:29:13-31:52
+93                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+93-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/260cc699ce173fea4ca433b73ce1c687/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:30:17-78
+94                android:value="androidx.startup" />
+94-->[androidx.lifecycle:lifecycle-process:2.7.0] /Users/erenyeager/.gradle/caches/9.4.1/transforms/260cc699ce173fea4ca433b73ce1c687/transformed/lifecycle-process-2.7.0/AndroidManifest.xml:31:17-49
+95            <meta-data
+95-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
+96                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+96-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
+97                android:value="androidx.startup" />
+97-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
+98        </provider>
+99
+100        <activity
+100-->[androidx.compose.ui:ui-test-manifest:1.6.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/2ccef86485f3b5cf13142b5fe07aca97/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:23:9-25:39
+101            android:name="androidx.activity.ComponentActivity"
+101-->[androidx.compose.ui:ui-test-manifest:1.6.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/2ccef86485f3b5cf13142b5fe07aca97/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:24:13-63
+102            android:exported="true" />
+102-->[androidx.compose.ui:ui-test-manifest:1.6.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/2ccef86485f3b5cf13142b5fe07aca97/transformed/ui-test-manifest-1.6.1/AndroidManifest.xml:25:13-36
+103        <activity
+103-->[androidx.compose.ui:ui-tooling-android:1.6.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/6c57e0f533739b432b98a9089e68e290/transformed/ui-tooling-release/AndroidManifest.xml:23:9-25:39
+104            android:name="androidx.compose.ui.tooling.PreviewActivity"
+104-->[androidx.compose.ui:ui-tooling-android:1.6.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/6c57e0f533739b432b98a9089e68e290/transformed/ui-tooling-release/AndroidManifest.xml:24:13-71
+105            android:exported="true" />
+105-->[androidx.compose.ui:ui-tooling-android:1.6.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/6c57e0f533739b432b98a9089e68e290/transformed/ui-tooling-release/AndroidManifest.xml:25:13-36
+106
+107        <receiver
+107-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
+108            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+108-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
+109            android:directBootAware="false"
+109-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
+110            android:enabled="true"
+110-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
+111            android:exported="true"
+111-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
+112            android:permission="android.permission.DUMP" >
+112-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
+113            <intent-filter>
+113-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
+114                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+114-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
+114-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
+115            </intent-filter>
+116            <intent-filter>
+116-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
+117                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+117-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
+117-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
+118            </intent-filter>
+119            <intent-filter>
+119-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
+120                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+120-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
+120-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
+121            </intent-filter>
+122            <intent-filter>
+122-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
+123                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+123-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
+123-->[androidx.profileinstaller:profileinstaller:1.3.1] /Users/erenyeager/.gradle/caches/9.4.1/transforms/ee4ac5156ae78543af5a0739e43d9e6a/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
+124            </intent-filter>
+125        </receiver>
+126    </application>
+127
+128</manifest>
