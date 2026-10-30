@@ -20,7 +20,7 @@ sealed class IntentAction {
 
 class RouterEngine(private val apiService: VisionApiService) {
 
-    private val visionRegex = Regex("(?:see|look|vision|scan|describe|camera|qr\\s*code|in\\s*front\\s*of\\s*me|read.*in\\s*front)", RegexOption.IGNORE_CASE)
+    private val visionRegex = Regex("(?:see|look|vision|scan|describe|camera|qr\\s*code|in\\s*front|infront|who\\s+is|who\\x27s|who\\s+standing|anyone\\s+there|what.*in\\s*front)", RegexOption.IGNORE_CASE)
     private val navigationRegex = Regex("(?:navigate\\s+to|directions?\\s+to|take\\s+me\\s+to|route\\s+to)\\s+(.+)", RegexOption.IGNORE_CASE)
     private val locationRegex = Regex("(?:where\\s+am\\s+i|what\\s+is\\s+my\\s+location|current\\s+position)", RegexOption.IGNORE_CASE)
 

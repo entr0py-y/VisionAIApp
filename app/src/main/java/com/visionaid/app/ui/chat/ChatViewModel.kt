@@ -385,19 +385,20 @@ class ChatViewModel(
         _uiState.update { it.copy(isProcessing = true) }
 
         viewModelScope.launch {
-            var localFaceAnnouncement: String? = null
+            var recognizedPersonName: String? = null
             try {
                 if (faceMemoryRepo != null) {
                     val cleanBase64 = if (base64.contains(",")) base64.substringAfter(",") else base64
                     val bytes = Base64.decode(cleanBase64, Base64.DEFAULT)
                     val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                     if (bitmap != null) {
+                        Log.i("ChatViewModel", "Running local face recognition on image (${bitmap.width}x${bitmap.height})...")
                         val match = faceMemoryRepo.recognizeFaceInBitmap(bitmap)
                         if (match != null) {
-                            localFaceAnnouncement = "${match.first.name} is standing in front of you."
-                            Log.i("ChatViewModel", "Biometric match found: ${match.first.name} (${match.second})")
-                            ttsManager.speak(localFaceAnnouncement)
-                            addMessage(ChatMessage(sender = "ai", text = localFaceAnnouncement, imageUrl = dataUri))
+                            recognizedPersonName = match.first.name
+                            Log.i("ChatViewModel", "Biometric face match found: $recognizedPersonName (Score: ${match.second})")
+                        } else {
+                            Log.i("ChatViewModel", "No registered face matched in image.")
                         }
                     }
                 }
@@ -406,8 +407,8 @@ class ChatViewModel(
             }
 
             try {
-                val effectivePrompt = if (localFaceAnnouncement != null) {
-                    "$prompt. Note: Local scan identified $localFaceAnnouncement."
+                val effectivePrompt = if (recognizedPersonName != null) {
+                    "$prompt. IMPORTANT: The person standing in front is recognized as $recognizedPersonName. Please explicitly name $recognizedPersonName in your response and describe what they are doing and what else is around."
                 } else {
                     prompt
                 }
@@ -416,19 +417,27 @@ class ChatViewModel(
                     VisionRequest(image = dataUri, prompt = effectivePrompt, source = "phone")
                 )
                 if (response.isSuccessful && response.body() != null) {
-                    val desc = response.body()?.description ?: "No description available."
-                    if (localFaceAnnouncement == null) {
-                        addMessage(ChatMessage(sender = "ai", text = desc, imageUrl = dataUri))
-                        ttsManager.speak(desc)
-                    } else {
-                        addMessage(ChatMessage(sender = "ai", text = desc))
-                        ttsManager.speak(desc)
+                    var desc = response.body()?.description ?: "No description available."
+                    if (recognizedPersonName != null && !desc.contains(recognizedPersonName, ignoreCase = true)) {
+                        desc = "$recognizedPersonName is standing in front of you. $desc"
                     }
-                } else if (localFaceAnnouncement == null) {
-                    addMessage(ChatMessage(sender = "ai", text = "Could not analyze the scene."))
+                    addMessage(ChatMessage(sender = "ai", text = desc, imageUrl = dataUri))
+                    ttsManager.speak(desc)
+                } else {
+                    if (recognizedPersonName != null) {
+                        val fallbackText = "$recognizedPersonName is standing in front of you."
+                        addMessage(ChatMessage(sender = "ai", text = fallbackText, imageUrl = dataUri))
+                        ttsManager.speak(fallbackText)
+                    } else {
+                        addMessage(ChatMessage(sender = "ai", text = "Could not analyze the scene."))
+                    }
                 }
             } catch (e: Exception) {
-                if (localFaceAnnouncement == null) {
+                if (recognizedPersonName != null) {
+                    val fallbackText = "$recognizedPersonName is standing in front of you."
+                    addMessage(ChatMessage(sender = "ai", text = fallbackText, imageUrl = dataUri))
+                    ttsManager.speak(fallbackText)
+                } else {
                     addMessage(ChatMessage(sender = "ai", text = "Network error analyzing image."))
                 }
             } finally {
