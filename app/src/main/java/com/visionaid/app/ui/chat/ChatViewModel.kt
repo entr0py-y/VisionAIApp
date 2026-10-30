@@ -79,6 +79,7 @@ class ChatViewModel(
     private var speechRecognizer: SpeechRecognizer? = null
     private var lastProcessedTranscript: String = ""
     private var lastProcessedTime: Long = 0L
+    private var lastAudioUploadTime: Long = 0L
 
     init {
         observeSseEvents()
@@ -112,6 +113,17 @@ class ChatViewModel(
     }
 
     private fun handleLocalHardwareAudio(pcmData: ByteArray) {
+        if (pcmData.size < 12000) {
+            Log.d("ChatViewModel", "Ignored short hardware audio: ${pcmData.size} bytes")
+            return
+        }
+        val now = System.currentTimeMillis()
+        if (_uiState.value.isProcessing || (now - lastAudioUploadTime < 2000L)) {
+            Log.d("ChatViewModel", "Ignored concurrent or rapid hardware audio upload (cooldown active)")
+            return
+        }
+        lastAudioUploadTime = now
+
         _uiState.update { it.copy(isOpen = true, isRecording = false, isProcessing = true) }
         vibrator.vibrate(VibrationEffect.createOneShot(50, VibrationEffect.DEFAULT_AMPLITUDE))
         ttsManager.stop()
@@ -128,9 +140,12 @@ class ChatViewModel(
                         val transcript = json.get("transcript")?.asString
                         if (!transcript.isNullOrBlank() && !text.isNullOrBlank()) {
                             handleAudioResult(transcript, text)
+                        } else {
+                            _uiState.update { it.copy(isProcessing = false) }
                         }
                     } catch (e: Exception) {
                         Log.e("ChatViewModel", "Error parsing upload response", e)
+                        _uiState.update { it.copy(isProcessing = false) }
                     }
                 } else {
                     Log.e("ChatViewModel", "Hardware audio upload failed: ${response.code()}")

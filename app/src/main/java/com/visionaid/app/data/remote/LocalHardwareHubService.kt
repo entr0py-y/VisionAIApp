@@ -170,6 +170,7 @@ class LocalHardwareHubService : Service() {
 
         private val audioBuffer = ByteArrayOutputStream()
         private var isRecording = false
+        private var lastAudioDispatchTime: Long = 0L
 
         private val camFrameBuffer = ByteArrayOutputStream()
         private var isReceivingCamImage = false
@@ -200,11 +201,18 @@ class LocalHardwareHubService : Service() {
                 message == "STOP" -> {
                     micConnection = conn
                     isRecording = false
-                    Log.d("LocalHardwareHub", "MIC stopped recording, size: ${audioBuffer.size()} bytes")
-                    if (audioBuffer.size() > 0) {
+                    val size = audioBuffer.size()
+                    Log.d("LocalHardwareHub", "MIC stopped recording, size: $size bytes")
+                    val now = System.currentTimeMillis()
+                    if (size >= 12000 && (now - lastAudioDispatchTime) > 1500L) {
+                        lastAudioDispatchTime = now
                         onEvent(HardwareIntakeEvent.PcmAudioReceived(audioBuffer.toByteArray()))
-                        audioBuffer.reset()
+                    } else if (size < 12000) {
+                        Log.d("LocalHardwareHub", "Discarded short audio buffer ($size bytes < 12000 bytes)")
+                    } else {
+                        Log.d("LocalHardwareHub", "Ignored rapid audio dispatch — cooldown active")
                     }
+                    audioBuffer.reset()
                     onEvent(HardwareIntakeEvent.MicPing)
                 }
                 message.contains("ESP32_MIC") || message.contains("MIC_PING") -> {

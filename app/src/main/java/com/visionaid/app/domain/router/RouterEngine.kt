@@ -32,6 +32,7 @@ class RouterEngine(private val apiService: VisionApiService) {
             visionRegex.containsMatchIn(text) -> IntentAction.Vision(text)
             navMatch != null -> IntentAction.Navigation(text, navMatch.groupValues[1].trim())
             locationRegex.containsMatchIn(text) -> IntentAction.LocationInfo(text)
+            !pregenResponse.isNullOrBlank() -> IntentAction.GeneralChat(text, pregenResponse)
             else -> {
                 // Remote Fallback
                 try {
