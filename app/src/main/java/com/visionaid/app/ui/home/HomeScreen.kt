@@ -80,12 +80,12 @@ fun HomeHeader(username: String, isDarkTheme: Boolean, onAvatarClick: () -> Unit
                         Text("Login", fontWeight = FontWeight.Bold)
                     }
                 } else {
-                    IconButton(
-                        onClick = onAvatarClick,
+                    Box(
                         modifier = Modifier
                             .size(44.dp)
                             .clip(CircleShape)
-                            .background(headerText.copy(alpha = 0.1f))
+                            .background(headerText.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(Icons.Default.Person, contentDescription = "Profile", tint = headerText)
                     }
