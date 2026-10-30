@@ -159,17 +159,10 @@ fun AiChatScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Camera Button (Silent CameraX Background Capture to Temp File)
+                // Camera Button (Prioritizes ESP32-CAM via Local Hub, fallback to phone camera)
                 IconButton(
                     onClick = {
-                        coroutineScope.launch {
-                            val base64Frame = SilentCameraManager.captureFrameToTempFile(context, lifecycleOwner)
-                            if (!base64Frame.isNullOrBlank()) {
-                                viewModel.analyzeLocalPhoneImage(base64Frame, "Describe what is in front of me.")
-                            } else {
-                                viewModel.sendMessage("Describe what is in front of me.")
-                            }
-                        }
+                        viewModel.triggerCameraDirectly()
                     }
                 ) {
                     Icon(
@@ -240,32 +233,7 @@ fun AiChatScreen(
                     onClick = {
                         val textToSend = inputText.trim()
                         inputText = ""
-
-                        val lower = textToSend.lowercase()
-                        val isVisionQuery = lower.contains("infront") ||
-                                lower.contains("in front") ||
-                                lower.contains("see") ||
-                                lower.contains("look") ||
-                                lower.contains("describe") ||
-                                lower.contains("camera") ||
-                                lower.contains("what is in front") ||
-                                lower.contains("whats in front")
-
-                        if (isVisionQuery) {
-                            viewModel.addMessage(ChatMessage(sender = "user", text = textToSend))
-                            viewModel.setProcessing(true)
-
-                            coroutineScope.launch {
-                                val base64Frame = SilentCameraManager.captureFrameToTempFile(context, lifecycleOwner)
-                                if (!base64Frame.isNullOrBlank()) {
-                                    viewModel.analyzeLocalPhoneImage(base64Frame, textToSend)
-                                } else {
-                                    viewModel.sendMessage(textToSend)
-                                }
-                            }
-                        } else {
-                            viewModel.sendMessage(textToSend)
-                        }
+                        viewModel.sendMessage(textToSend)
                     },
                     enabled = inputText.isNotBlank() && !uiState.isProcessing
                 ) {

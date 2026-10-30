@@ -315,20 +315,17 @@ class ChatViewModel(
 
     private suspend fun handleVisionInChat(prompt: String) {
         _uiState.update { it.copy(isProcessing = true) }
-        val isCamOnline = healthRepo?.healthState?.value?.camOnline == true
+        val isCamOnline = LocalHardwareHubService.isCameraConnected() || (healthRepo?.healthState?.value?.camOnline == true)
 
         // Priority 1: Local ESP32-CAM if online
         if (isCamOnline) {
             try {
-                Log.d("ChatViewModel", "ESP32-CAM is online. Triggering local hardware camera...")
-                LocalHardwareHubService.triggerCameraCapture()
+                Log.d("ChatViewModel", "ESP32-CAM is online. Requesting local hardware camera frame...")
+                val localFrame = LocalHardwareHubService.captureImageFromCamera(8000)
 
-                val frameEvent = withTimeoutOrNull(8000) {
-                    LocalHardwareHubService.hardwareEvents.first { it is HardwareIntakeEvent.CameraFrameReceived }
-                } as? HardwareIntakeEvent.CameraFrameReceived
-
-                if (frameEvent != null && !frameEvent.base64Jpeg.isNullOrBlank()) {
-                    analyzeLocalPhoneImage(frameEvent.base64Jpeg, prompt)
+                if (!localFrame.isNullOrBlank()) {
+                    Log.d("ChatViewModel", "Received ESP32-CAM frame. Analyzing with Vision AI...")
+                    analyzeLocalPhoneImage(localFrame, prompt)
                     return
                 } else {
                     Log.w("ChatViewModel", "Timeout waiting for local ESP32-CAM frame, trying remote fallback...")

@@ -1,5 +1,7 @@
 package com.visionaid.app.data.repository
 
+import com.visionaid.app.data.remote.LocalHardwareHubService
+
 import android.util.Log
 import com.visionaid.app.data.model.HealthResponse
 import com.visionaid.app.data.remote.VisionApiService
@@ -47,7 +49,7 @@ class DeviceHealthRepository(private val apiService: VisionApiService) {
     private fun updateConsolidatedHealth() {
         val now = System.currentTimeMillis()
         val localMicOnline = (now - lastLocalMicSeen) < 10000L
-        val localCamOnline = (now - lastLocalCamSeen) < 10000L
+        val localCamOnline = (now - lastLocalCamSeen) < 10000L || LocalHardwareHubService.isCameraConnected()
 
         val isMic = localMicOnline || (lastRemoteHealth?.micOnline == true)
         val isCam = localCamOnline || (lastRemoteHealth?.camOnline == true)

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.visionaid.app.data.model.HardwareCameraRequest
 import com.visionaid.app.data.model.VisionRequest
+import com.visionaid.app.data.remote.LocalHardwareHubService
 import com.visionaid.app.data.remote.VisionApiService
 import com.visionaid.app.util.TtsManager
 import kotlinx.coroutines.delay
@@ -34,6 +35,17 @@ class VisionViewModel(
         _uiState.update { it.copy(isLoading = true, description = null, imageB64 = null, qrUrl = null) }
         viewModelScope.launch {
             try {
+                // Priority 1: Check Local Phone Hardware Hub
+                if (LocalHardwareHubService.isCameraConnected()) {
+                    val localFrame = LocalHardwareHubService.captureImageFromCamera(8000)
+                    if (!localFrame.isNullOrBlank()) {
+                        val pureB64 = if (localFrame.startsWith("data:")) localFrame.substringAfter(",") else localFrame
+                        analyzeLocalImage(pureB64, prompt)
+                        return@launch
+                    }
+                }
+
+                // Priority 2: Remote backend fallback
                 val response = apiService.triggerHardwareCamera(HardwareCameraRequest(prompt))
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
@@ -52,8 +64,9 @@ class VisionViewModel(
                         delay(1500) // Let TTS start
                         _uiState.update { it.copy(launchUrlEvent = body.qrUrl) }
                     }
+                    return@launch
                 } else {
-                    _uiState.update { it.copy(isLoading = false, description = "Failed to capture image.") }
+                    _uiState.update { it.copy(isLoading = false, description = "Failed to capture image from ESP32-CAM.") }
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, description = "Network Error.") }
@@ -65,7 +78,8 @@ class VisionViewModel(
         _uiState.update { it.copy(isLoading = true, description = null, imageB64 = base64Image, qrUrl = null) }
         viewModelScope.launch {
             try {
-                val response = apiService.analyzeVision(VisionRequest(image = base64Image, prompt = prompt))
+                val dataUri = if (base64Image.startsWith("data:")) base64Image else "data:image/jpeg;base64,$base64Image"
+                val response = apiService.analyzeVision(VisionRequest(image = dataUri, prompt = prompt))
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!
                     _uiState.update {
