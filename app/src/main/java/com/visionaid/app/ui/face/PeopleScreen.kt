@@ -1,5 +1,6 @@
 package com.visionaid.app.ui.face
 
+
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Vibrator
@@ -18,7 +19,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -26,12 +26,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.visionaid.app.data.face.FaceProfile
 import com.visionaid.app.data.face.FaceRecognitionManager
-import com.visionaid.app.ui.theme.DangerColor
-import com.visionaid.app.ui.theme.LightMutedText
 import com.visionaid.app.util.TtsManager
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+import androidx.compose.ui.graphics.Color
+private val DangerColor = Color(0xFFF87171)
+private val LightMutedText = Color(0xFF8E8E93)
+private val SuccessColor = Color(0xFF34D399)
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +51,7 @@ fun PeopleScreen(
     var showNameDialog by remember { mutableStateOf(false) }
     var candidateName by remember { mutableStateOf("") }
     var activeEnrollmentName by remember { mutableStateOf<String?>(null) }
+    var showVerifyScreen by remember { mutableStateOf(false) }
 
     // If an enrollment is active, show the full-screen CameraX Face Enrollment scanner
     if (activeEnrollmentName != null) {
@@ -61,6 +66,19 @@ fun PeopleScreen(
             },
             onDismiss = {
                 activeEnrollmentName = null
+            }
+        )
+        return
+    }
+
+    // If verification/test scanner is active, show the full-screen FaceVerificationScreen
+    if (showVerifyScreen) {
+        FaceVerificationScreen(
+            repository = viewModel.repository,
+            ttsManager = ttsManager,
+            vibrator = vibrator,
+            onDismiss = {
+                showVerifyScreen = false
             }
         )
         return
@@ -107,30 +125,58 @@ fun PeopleScreen(
             }
         }
 
-        // Add Person Action Card
-        Button(
-            onClick = {
-                if (profiles.size >= 5) {
-                    ttsManager.speak("Memory is full. Delete an existing person to add a new one.")
-                } else {
-                    candidateName = ""
-                    showNameDialog = true
-                }
-            },
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
+        // Action Buttons Row (Add Person + Verify Face Test)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(Icons.Default.PersonAdd, contentDescription = "Add Person", tint = Color.White)
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "Add Person",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            Button(
+                onClick = {
+                    if (profiles.size >= 5) {
+                        ttsManager.speak("Memory is full. Delete an existing person to add a new one.")
+                    } else {
+                        candidateName = ""
+                        showNameDialog = true
+                    }
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp)
+            ) {
+                Icon(Icons.Default.PersonAdd, contentDescription = "Add Person", tint = Color.White)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Add Person",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            OutlinedButton(
+                onClick = {
+                    if (profiles.isEmpty()) {
+                        ttsManager.speak("No faces enrolled yet. Add a person first.")
+                    } else {
+                        showVerifyScreen = true
+                    }
+                },
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(52.dp)
+            ) {
+                Icon(Icons.Default.Visibility, contentDescription = "Verify", tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Verify Face",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
 
         // Feature Explanation Card

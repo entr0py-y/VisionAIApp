@@ -1,5 +1,6 @@
 package com.visionaid.app.ui.home
 
+
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,13 +14,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.visionaid.app.ui.theme.LightMutedText
-import com.visionaid.app.ui.theme.SuccessColor
+
+import androidx.compose.ui.graphics.Color
+private val DangerColor = Color(0xFFF87171)
+private val LightMutedText = Color(0xFF8E8E93)
+private val SuccessColor = Color(0xFF34D399)
+
 
 @Composable
 fun HomeScreen(

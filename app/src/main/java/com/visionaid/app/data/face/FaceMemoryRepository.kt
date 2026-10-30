@@ -2,6 +2,7 @@ package com.visionaid.app.data.face
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.graphics.Rect
 import android.util.Base64
 import android.util.Log
@@ -31,13 +32,13 @@ class FaceMemoryRepository(
     private val _profiles = MutableStateFlow<List<FaceProfile>>(emptyList())
     val profiles: StateFlow<List<FaceProfile>> = _profiles.asStateFlow()
 
-    // ML Kit Face Detector for static/stream image face extraction
+    // ML Kit Face Detector with 5% minFaceSize to capture faces at distance
     private val detector = FaceDetection.getClient(
         FaceDetectorOptions.Builder()
             .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
             .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
             .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
-            .setMinFaceSize(0.15f)
+            .setMinFaceSize(0.05f)
             .build()
     )
 
@@ -52,7 +53,7 @@ class FaceMemoryRepository(
                 val type = object : TypeToken<List<FaceProfile>>() {}.type
                 val list: List<FaceProfile> = gson.fromJson(json, type) ?: emptyList()
                 _profiles.value = list
-                Log.d(tag, "Loaded ${list.size} face profiles from memory.")
+                Log.i(tag, "Loaded ${list.size} face profiles from memory.")
             } catch (e: Exception) {
                 Log.e(tag, "Failed to parse profiles: ${e.message}")
             }
@@ -65,10 +66,6 @@ class FaceMemoryRepository(
         prefs.edit().putString("saved_profiles", json).apply()
     }
 
-    /**
-     * Enrolls a person with their name, embedding vector, and an optional face thumbnail.
-     * Enforces a maximum of 5 stored people.
-     */
     fun addProfile(name: String, embedding: FloatArray, faceBitmap: Bitmap?): Boolean {
         val current = _profiles.value.toMutableList()
         if (current.size >= 5) {
@@ -105,52 +102,84 @@ class FaceMemoryRepository(
     }
 
     /**
-     * Given any frame (from ESP32-CAM or phone camera), detects faces and attempts
-     * to recognize known people from memory.
-     * Returns Pair(MatchedProfile, SimilarityScore) or null if no match / no face found.
+     * Given any frame (from ESP32-CAM or phone camera), detects faces across all orientations
+     * and attempts to recognize known people from memory.
      */
     suspend fun recognizeFaceInBitmap(bitmap: Bitmap): Pair<FaceProfile, Float>? = withContext(Dispatchers.Default) {
         val saved = _profiles.value
-        if (saved.isEmpty()) return@withContext null
+        Log.i(tag, "recognizeFaceInBitmap: incoming bitmap ${bitmap.width}x${bitmap.height}, enrolled profiles: ${saved.size}")
+        if (saved.isEmpty()) {
+            Log.w(tag, "No profiles enrolled in memory!")
+            return@withContext null
+        }
 
-        val faces = detectFacesInBitmap(bitmap)
+        // Try detecting faces at 0 degrees, then 90, 270 if needed (for rotated camera mounts)
+        var faces = detectFacesInBitmap(bitmap, 0)
+        var workingBitmap = bitmap
+
+        if (faces.isEmpty()) {
+            Log.d(tag, "No face at 0 deg, trying 90 deg rotation...")
+            val rotated90 = rotateBitmap(bitmap, 90f)
+            faces = detectFacesInBitmap(rotated90, 0)
+            if (faces.isNotEmpty()) {
+                workingBitmap = rotated90
+            } else {
+                Log.d(tag, "No face at 90 deg, trying 270 deg rotation...")
+                val rotated270 = rotateBitmap(bitmap, 270f)
+                faces = detectFacesInBitmap(rotated270, 0)
+                if (faces.isNotEmpty()) {
+                    workingBitmap = rotated270
+                }
+            }
+        }
+
+        Log.i(tag, "Face detection completed: found ${faces.size} faces")
         if (faces.isEmpty()) return@withContext null
 
         // Pick the largest / most prominent face
         val primaryFace = faces.maxByOrNull { it.boundingBox.width() * it.boundingBox.height() } ?: return@withContext null
-        val cropped = cropFaceBitmap(bitmap, primaryFace.boundingBox) ?: return@withContext null
+        val cropped = cropFaceBitmap(workingBitmap, primaryFace.boundingBox) ?: return@withContext null
 
-        val embedding = recognitionManager.extractEmbedding(cropped) ?: return@withContext null
+        val embedding = recognitionManager.extractEmbedding(cropped) ?: run {
+            Log.w(tag, "Failed to extract embedding from cropped face")
+            return@withContext null
+        }
 
         var bestMatch: FaceProfile? = null
         var highestScore = 0f
 
+        // Threshold of 0.58f for cross-device camera invariance
+        val matchThreshold = 0.58f
+
         for (profile in saved) {
             val score = recognitionManager.cosineSimilarity(embedding, profile.embedding.toFloatArray())
-            Log.d(tag, "Comparing with ${profile.name}: score = $score")
-            if (score > highestScore && score >= FaceRecognitionManager.SIMILARITY_THRESHOLD) {
+            Log.i(tag, "Comparing against '${profile.name}': similarity score = $score (threshold = $matchThreshold)")
+            if (score > highestScore) {
                 highestScore = score
-                bestMatch = profile
+                if (score >= matchThreshold) {
+                    bestMatch = profile
+                }
             }
         }
 
         if (bestMatch != null) {
-            Log.i(tag, "Recognized ${bestMatch.name} with similarity $highestScore")
+            Log.i(tag, "MATCH CONFIRMED: ${bestMatch.name} with score $highestScore")
             Pair(bestMatch, highestScore)
         } else {
+            Log.i(tag, "No match above threshold $matchThreshold. Highest was: $highestScore")
             null
         }
     }
 
-    private suspend fun detectFacesInBitmap(bitmap: Bitmap): List<Face> = suspendCancellableCoroutine { cont ->
+    private suspend fun detectFacesInBitmap(bitmap: Bitmap, rotationDegrees: Int): List<Face> = suspendCancellableCoroutine { cont ->
         try {
-            val image = InputImage.fromBitmap(bitmap, 0)
+            val image = InputImage.fromBitmap(bitmap, rotationDegrees)
             detector.process(image)
                 .addOnSuccessListener { faces ->
                     if (cont.isActive) cont.resume(faces)
                 }
                 .addOnFailureListener { e ->
-                    Log.w(tag, "MLKit face detection failed: ${e.message}")
+                    Log.w(tag, "MLKit face detection error: ${e.message}")
                     if (cont.isActive) cont.resume(emptyList())
                 }
         } catch (e: Exception) {
@@ -159,9 +188,13 @@ class FaceMemoryRepository(
         }
     }
 
+    private fun rotateBitmap(source: Bitmap, angle: Float): Bitmap {
+        val matrix = Matrix().apply { postRotate(angle) }
+        return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
+    }
+
     private fun cropFaceBitmap(source: Bitmap, box: Rect): Bitmap? {
         return try {
-            // Add a 15% margin around the face box for better facial context
             val marginX = (box.width() * 0.15f).toInt()
             val marginY = (box.height() * 0.15f).toInt()
 
