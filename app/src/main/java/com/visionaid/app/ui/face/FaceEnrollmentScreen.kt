@@ -11,7 +11,6 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cameraswitch
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,7 +38,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
@@ -79,10 +76,22 @@ fun FaceEnrollmentScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
 
-    var lensFacing by remember { mutableStateOf(CameraSelector.LENS_FACING_BACK) }
+    var lensFacing by remember { mutableIntStateOf(CameraSelector.LENS_FACING_BACK) }
+    var previewView by remember { mutableStateOf<PreviewView?>(null) }
     var alignmentState by remember { mutableStateOf(AlignmentState.NO_FACE) }
     var statusMessage by remember { mutableStateOf("Place face inside the frame") }
     var isProcessingCapture by remember { mutableStateOf(false) }
+
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    val faceDetector = remember {
+        FaceDetection.getClient(
+            FaceDetectorOptions.Builder()
+                .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+                .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
+                .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
+                .build()
+        )
+    }
 
     // TTS guidance throttler
     var lastTtsTimestamp by remember { mutableLongStateOf(0L) }
@@ -107,172 +116,193 @@ fun FaceEnrollmentScreen(
         label = "ovalColor"
     )
 
+    // Rebind Camera whenever lensFacing (Front/Back) or previewView changes
+    LaunchedEffect(lensFacing, previewView) {
+        val pv = previewView ?: return@LaunchedEffect
+        alignmentState = AlignmentState.NO_FACE
+        statusMessage = if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
+            "Front camera: look straight at screen"
+        } else {
+            "Place face inside the frame"
+        }
+        isProcessingCapture = false
+
+        val cameraProvider = withContext(Dispatchers.IO) {
+            ProcessCameraProvider.getInstance(context).get()
+        }
+
+        val preview = Preview.Builder().build().also {
+            it.setSurfaceProvider(pv.surfaceProvider)
+        }
+
+        var alignedFramesCount = 0
+
+        val imageAnalyzer = ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+            .build()
+            .also { analyzer ->
+                analyzer.setAnalyzer(cameraExecutor) { imageProxy ->
+                    if (isProcessingCapture) {
+                        imageProxy.close()
+                        return@setAnalyzer
+                    }
+
+                    try {
+                        val rotation = imageProxy.imageInfo.rotationDegrees
+                        val bitmap = imageProxy.toBitmap()
+                        val rotatedBitmap = if (rotation != 0) {
+                            val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
+                            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                        } else {
+                            bitmap
+                        }
+
+                        val inputImage = InputImage.fromBitmap(rotatedBitmap, 0)
+                        faceDetector.process(inputImage)
+                            .addOnSuccessListener { faces ->
+                                if (faces.isEmpty()) {
+                                    alignedFramesCount = 0
+                                    alignmentState = AlignmentState.NO_FACE
+                                    statusMessage = "Looking for face..."
+                                } else {
+                                    val face = faces.maxByOrNull { it.boundingBox.width() * it.boundingBox.height() }!!
+                                    val imgWidth = rotatedBitmap.width.toFloat()
+                                    val imgHeight = rotatedBitmap.height.toFloat()
+
+                                    val box = face.boundingBox
+                                    val faceWidthRatio = box.width() / imgWidth
+                                    val faceCenterX = box.centerX() / imgWidth
+                                    val faceCenterY = box.centerY() / imgHeight
+
+                                    val yaw = face.headEulerAngleY
+                                    val pitch = face.headEulerAngleX
+
+                                    val isFacingFront = abs(yaw) < 18f && abs(pitch) < 18f
+                                    val isCentered = abs(faceCenterX - 0.5f) < 0.22f && abs(faceCenterY - 0.5f) < 0.22f
+
+                                    if (faceWidthRatio < 0.22f) {
+                                        alignedFramesCount = 0
+                                        alignmentState = AlignmentState.TOO_FAR
+                                        statusMessage = "Move a little closer"
+                                        speakGuidance("Move a little closer")
+                                    } else if (faceWidthRatio > 0.75f) {
+                                        alignedFramesCount = 0
+                                        alignmentState = AlignmentState.TOO_CLOSE
+                                        statusMessage = "Move slightly back"
+                                        speakGuidance("Move slightly back")
+                                    } else if (!isFacingFront) {
+                                        alignedFramesCount = 0
+                                        alignmentState = AlignmentState.TILTED
+                                        statusMessage = "Look straight ahead"
+                                        speakGuidance("Look straight ahead")
+                                    } else if (!isCentered) {
+                                        alignedFramesCount = 0
+                                        alignmentState = AlignmentState.TILTED
+                                        statusMessage = "Center face in the oval"
+                                    } else {
+                                        // Face is properly aligned!
+                                        alignedFramesCount++
+                                        if (alignedFramesCount >= 3 && !isProcessingCapture) {
+                                            // Auto-capture triggered!
+                                            isProcessingCapture = true
+                                            alignmentState = AlignmentState.CAPTURING
+                                            statusMessage = "Hold still, capturing..."
+                                            speakGuidance("Hold still, scanning...", force = true)
+
+                                            coroutineScope.launch {
+                                                // Trigger haptic vibration
+                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                                    vibrator.vibrate(VibrationEffect.createOneShot(180, VibrationEffect.DEFAULT_AMPLITUDE))
+                                                } else {
+                                                    @Suppress("DEPRECATION")
+                                                    vibrator.vibrate(180)
+                                                }
+
+                                                // Crop face with padding
+                                                val marginX = (box.width() * 0.15f).toInt()
+                                                val marginY = (box.height() * 0.15f).toInt()
+                                                val left = (box.left - marginX).coerceAtLeast(0)
+                                                val top = (box.top - marginY).coerceAtLeast(0)
+                                                val right = (box.right + marginX).coerceAtMost(rotatedBitmap.width)
+                                                val bottom = (box.bottom + marginY).coerceAtMost(rotatedBitmap.height)
+
+                                                val croppedFace = Bitmap.createBitmap(
+                                                    rotatedBitmap, left, top, right - left, bottom - top
+                                                )
+
+                                                val embedding = recognitionManager.extractEmbedding(croppedFace)
+                                                if (embedding != null) {
+                                                    val success = repository.addProfile(personName, embedding, croppedFace)
+                                                    withContext(Dispatchers.Main) {
+                                                        if (success) {
+                                                            alignmentState = AlignmentState.SUCCESS
+                                                            statusMessage = "Enrolled $personName successfully!"
+                                                            speakGuidance("$personName added to memory successfully!", force = true)
+                                                            delay(1200)
+                                                            onEnrolled()
+                                                        } else {
+                                                            statusMessage = "Limit reached (max 5 people)"
+                                                            speakGuidance("Memory full. Maximum 5 people allowed.", force = true)
+                                                            delay(2000)
+                                                            onDismiss()
+                                                        }
+                                                    }
+                                                } else {
+                                                    isProcessingCapture = false
+                                                    alignedFramesCount = 0
+                                                }
+                                            }
+                                        } else {
+                                            alignmentState = AlignmentState.ALIGNED
+                                            statusMessage = "Perfect! Hold still..."
+                                        }
+                                    }
+                                }
+                            }
+                            .addOnCompleteListener {
+                                imageProxy.close()
+                            }
+                    } catch (e: Exception) {
+                        imageProxy.close()
+                    }
+                }
+            }
+
+        val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+        try {
+            if (cameraProvider.hasCamera(cameraSelector)) {
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalyzer)
+                Log.i("FaceEnrollment", "Successfully switched camera to lens: $lensFacing (0=Front, 1=Back)")
+            } else {
+                Log.w("FaceEnrollment", "Camera lens $lensFacing not available on this device!")
+            }
+        } catch (e: Exception) {
+            Log.e("FaceEnrollment", "Camera binding failed: ${e.message}")
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                val cameraProvider = ProcessCameraProvider.getInstance(context).get()
+                cameraProvider.unbindAll()
+            } catch (e: Exception) {
+                // ignore
+            }
+            cameraExecutor.shutdown()
+            faceDetector.close()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         // CameraX Preview View
         AndroidView(
             factory = { ctx ->
-                val previewView = PreviewView(ctx)
-                val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                val executor = Executors.newSingleThreadExecutor()
-
-                val faceDetector = FaceDetection.getClient(
-                    FaceDetectorOptions.Builder()
-                        .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
-                        .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
-                        .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
-                        .build()
-                )
-
-                cameraProviderFuture.addListener({
-                    val cameraProvider = cameraProviderFuture.get()
-                    val preview = Preview.Builder().build().also {
-                        it.setSurfaceProvider(previewView.surfaceProvider)
-                    }
-
-                    var alignedFramesCount = 0
-
-                    val imageAnalyzer = ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                        .build()
-                        .also { analyzer ->
-                            analyzer.setAnalyzer(executor) { imageProxy ->
-                                if (isProcessingCapture) {
-                                    imageProxy.close()
-                                    return@setAnalyzer
-                                }
-
-                                try {
-                                    val rotation = imageProxy.imageInfo.rotationDegrees
-                                    val bitmap = imageProxy.toBitmap()
-                                    val rotatedBitmap = if (rotation != 0) {
-                                        val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
-                                        Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-                                    } else {
-                                        bitmap
-                                    }
-
-                                    val inputImage = InputImage.fromBitmap(rotatedBitmap, 0)
-                                    faceDetector.process(inputImage)
-                                        .addOnSuccessListener { faces ->
-                                            if (faces.isEmpty()) {
-                                                alignedFramesCount = 0
-                                                alignmentState = AlignmentState.NO_FACE
-                                                statusMessage = "Looking for face..."
-                                            } else {
-                                                val face = faces.maxByOrNull { it.boundingBox.width() * it.boundingBox.height() }!!
-                                                val imgWidth = rotatedBitmap.width.toFloat()
-                                                val imgHeight = rotatedBitmap.height.toFloat()
-
-                                                val box = face.boundingBox
-                                                val faceWidthRatio = box.width() / imgWidth
-                                                val faceCenterX = box.centerX() / imgWidth
-                                                val faceCenterY = box.centerY() / imgHeight
-
-                                                val yaw = face.headEulerAngleY
-                                                val pitch = face.headEulerAngleX
-
-                                                val isFacingFront = abs(yaw) < 18f && abs(pitch) < 18f
-                                                val isCentered = abs(faceCenterX - 0.5f) < 0.22f && abs(faceCenterY - 0.5f) < 0.22f
-
-                                                if (faceWidthRatio < 0.22f) {
-                                                    alignedFramesCount = 0
-                                                    alignmentState = AlignmentState.TOO_FAR
-                                                    statusMessage = "Move a little closer"
-                                                    speakGuidance("Move a little closer")
-                                                } else if (faceWidthRatio > 0.75f) {
-                                                    alignedFramesCount = 0
-                                                    alignmentState = AlignmentState.TOO_CLOSE
-                                                    statusMessage = "Move slightly back"
-                                                    speakGuidance("Move slightly back")
-                                                } else if (!isFacingFront) {
-                                                    alignedFramesCount = 0
-                                                    alignmentState = AlignmentState.TILTED
-                                                    statusMessage = "Look straight ahead"
-                                                    speakGuidance("Look straight ahead")
-                                                } else if (!isCentered) {
-                                                    alignedFramesCount = 0
-                                                    alignmentState = AlignmentState.TILTED
-                                                    statusMessage = "Center face in the oval"
-                                                } else {
-                                                    // Face is properly aligned!
-                                                    alignedFramesCount++
-                                                    if (alignedFramesCount >= 3 && !isProcessingCapture) {
-                                                        // Auto-capture triggered!
-                                                        isProcessingCapture = true
-                                                        alignmentState = AlignmentState.CAPTURING
-                                                        statusMessage = "Hold still, capturing..."
-                                                        speakGuidance("Hold still, scanning...", force = true)
-
-                                                        coroutineScope.launch {
-                                                            // Trigger haptic vibration
-                                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                                                vibrator.vibrate(VibrationEffect.createOneShot(180, VibrationEffect.DEFAULT_AMPLITUDE))
-                                                            } else {
-                                                                @Suppress("DEPRECATION")
-                                                                vibrator.vibrate(180)
-                                                            }
-
-                                                            // Crop face with padding
-                                                            val marginX = (box.width() * 0.15f).toInt()
-                                                            val marginY = (box.height() * 0.15f).toInt()
-                                                            val left = (box.left - marginX).coerceAtLeast(0)
-                                                            val top = (box.top - marginY).coerceAtLeast(0)
-                                                            val right = (box.right + marginX).coerceAtMost(rotatedBitmap.width)
-                                                            val bottom = (box.bottom + marginY).coerceAtMost(rotatedBitmap.height)
-
-                                                            val croppedFace = Bitmap.createBitmap(
-                                                                rotatedBitmap, left, top, right - left, bottom - top
-                                                            )
-
-                                                            val embedding = recognitionManager.extractEmbedding(croppedFace)
-                                                            if (embedding != null) {
-                                                                val success = repository.addProfile(personName, embedding, croppedFace)
-                                                                withContext(Dispatchers.Main) {
-                                                                    if (success) {
-                                                                        alignmentState = AlignmentState.SUCCESS
-                                                                        statusMessage = "Enrolled $personName successfully!"
-                                                                        speakGuidance("$personName added to memory successfully!", force = true)
-                                                                        delay(1200)
-                                                                        onEnrolled()
-                                                                    } else {
-                                                                        statusMessage = "Limit reached (max 5 people)"
-                                                                        speakGuidance("Memory full. Maximum 5 people allowed.", force = true)
-                                                                        delay(2000)
-                                                                        onDismiss()
-                                                                    }
-                                                                }
-                                                            } else {
-                                                                isProcessingCapture = false
-                                                                alignedFramesCount = 0
-                                                            }
-                                                        }
-                                                    } else {
-                                                        alignmentState = AlignmentState.ALIGNED
-                                                        statusMessage = "Perfect! Hold still..."
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        .addOnCompleteListener {
-                                            imageProxy.close()
-                                        }
-                                } catch (e: Exception) {
-                                    imageProxy.close()
-                                }
-                            }
-                        }
-
-                    val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
-                    try {
-                        cameraProvider.unbindAll()
-                        cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageAnalyzer)
-                    } catch (e: Exception) {
-                        Log.e("FaceEnrollment", "Camera binding failed: ${e.message}")
-                    }
-                }, ContextCompat.getMainExecutor(ctx))
-
-                previewView
+                PreviewView(ctx).also { pv ->
+                    previewView = pv
+                }
             },
             modifier = Modifier.fillMaxSize()
         )
@@ -345,6 +375,7 @@ fun FaceEnrollmentScreen(
                     } else {
                         CameraSelector.LENS_FACING_BACK
                     }
+                    Log.i("FaceEnrollment", "Toggled camera! Target lensFacing: $lensFacing")
                 },
                 modifier = Modifier
                     .size(44.dp)
@@ -390,7 +421,7 @@ fun FaceEnrollmentScreen(
 
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Face must be centered, upright, and well-lit",
+                        text = if (lensFacing == CameraSelector.LENS_FACING_FRONT) "Hold phone upright and face the screen" else "Face must be centered, upright, and well-lit",
                         color = Color.White.copy(alpha = 0.6f),
                         fontSize = 13.sp,
                         textAlign = TextAlign.Center
