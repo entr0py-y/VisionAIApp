@@ -2,10 +2,7 @@ package com.visionaid.app.ui.chat
 
 import android.graphics.BitmapFactory
 import android.util.Base64
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -73,12 +70,10 @@ fun AiChatScreen(
         }
     }
 
-    // Smooth Auto-scroll on new message
+    // Auto-scroll on new message
     LaunchedEffect(uiState.messages.size, uiState.isProcessing) {
         if (uiState.messages.isNotEmpty()) {
-            coroutineScope.launch {
-                listState.animateScrollToItem(uiState.messages.size - 1)
-            }
+            listState.animateScrollToItem(uiState.messages.size - 1)
         }
     }
 
@@ -93,7 +88,7 @@ fun AiChatScreen(
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
     ) {
-        // Header with smooth Back button ripple
+        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -114,7 +109,7 @@ fun AiChatScreen(
 
         HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-        // Message List with Item Animations
+        // Message List
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -125,15 +120,7 @@ fun AiChatScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(uiState.messages) { message ->
-                AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn(animationSpec = tween(250)) + slideInVertically(
-                        initialOffsetY = { 40 },
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)
-                    )
-                ) {
-                    MessageBubble(message)
-                }
+                MessageBubble(message)
             }
             if (uiState.isProcessing) {
                 item {

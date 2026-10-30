@@ -13,13 +13,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.navigation.compose.rememberNavController
 import com.google.android.gms.location.LocationServices
 import com.visionaid.app.data.remote.NetworkClient
 import com.visionaid.app.data.remote.SseGhostClickService
 import com.visionaid.app.data.repository.DeviceHealthRepository
 import com.visionaid.app.domain.router.RouterEngine
-import com.visionaid.app.navigation.AppNavGraph
+import com.visionaid.app.ui.MainScreen
 import com.visionaid.app.ui.chat.ChatViewModel
 import com.visionaid.app.ui.chat.ChatViewModelFactory
 import com.visionaid.app.ui.family.FamilyViewModel
@@ -117,12 +116,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val uiState by homeViewModel.uiState.collectAsState()
-            val navController = rememberNavController()
             
             VisionAIDTheme(darkTheme = uiState.isDarkTheme) {
-                AppNavGraph(
-                    navController = navController,
-                    homeViewModel = homeViewModel,
+                MainScreen(
+                    viewModel = homeViewModel, 
                     chatViewModel = chatViewModel,
                     visionViewModel = visionViewModel,
                     mobilityViewModel = mobilityViewModel,

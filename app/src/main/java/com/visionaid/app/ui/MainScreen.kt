@@ -52,8 +52,7 @@ fun MainScreen(
     visionViewModel: VisionViewModel,
     mobilityViewModel: MobilityViewModel,
     familyViewModel: FamilyViewModel,
-    ttsManager: TtsManager,
-    onNavigateToChat: () -> Unit = {}
+    ttsManager: TtsManager
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val chatUiState by chatViewModel.uiState.collectAsState()
@@ -146,7 +145,7 @@ fun MainScreen(
                 if (selectedTab == 0) {
                     HomeScreen(
                         uiState = uiState,
-                        onAvatarClick = { 
+                        onAvatarClick = {
                             if (uiState.currentUser != "User") {
                                 viewModel.logout()
                             } else {
@@ -155,10 +154,7 @@ fun MainScreen(
                         },
                         onOpenMobility = { showMobilitySheet = true },
                         onOpenFamily = { showFamilySheet = true },
-                        onOpenAiChat = { 
-                            onNavigateToChat()
-                            chatViewModel.openChat() 
-                        } 
+                        onOpenAiChat = { chatViewModel.openChat() } 
                     )
                 } else {
                     SettingsScreen(

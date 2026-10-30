@@ -2,7 +2,6 @@ package com.visionaid.app.ui.home
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,58 +10,16 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.visionaid.app.ui.theme.LightMutedText
 import com.visionaid.app.ui.theme.SuccessColor
-
-fun Modifier.bounceClick(
-    onClick: () -> Unit
-): Modifier = composed {
-    var isPressed by remember { mutableStateOf(false) }
-    val haptic = LocalHapticFeedback.current
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1.0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "card_bounce"
-    )
-
-    this
-        .graphicsLayer {
-            scaleX = scale
-            scaleY = scale
-        }
-        .pointerInput(Unit) {
-            detectTapGestures(
-                onPress = {
-                    isPressed = true
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    tryAwaitRelease()
-                    isPressed = false
-                },
-                onTap = {
-                    onClick()
-                }
-            )
-        }
-}
 
 @Composable
 fun HomeScreen(
@@ -251,9 +208,10 @@ fun FeaturesRow(onOpenMobility: () -> Unit, onOpenFamily: () -> Unit, onOpenAiCh
 @Composable
 fun FeatureActionCard(title: String, icon: ImageVector, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
+        onClick = onClick,
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = modifier.bounceClick(onClick)
+        modifier = modifier
     ) {
         Column(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
