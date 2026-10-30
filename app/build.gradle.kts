@@ -40,6 +40,10 @@ android {
     buildFeatures {
         compose = true
     }
+
+    androidResources {
+        noCompress.add("tflite")
+    }
 }
 
 dependencies {
@@ -63,6 +67,12 @@ dependencies {
     implementation("androidx.camera:camera-core:$cameraxVersion")
     implementation("androidx.camera:camera-camera2:$cameraxVersion")
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
+    implementation("androidx.camera:camera-view:$cameraxVersion")
+
+    // Google ML Kit Face Detection & TensorFlow Lite Face Recognition
+    implementation("com.google.mlkit:face-detection:16.1.7")
+    implementation("org.tensorflow:tensorflow-lite:2.14.0")
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
 
     // Navigation & Lifecycle
     implementation("androidx.navigation:navigation-compose:2.7.7")

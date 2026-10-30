@@ -26,6 +26,9 @@ import com.visionaid.app.data.repository.DeviceHealthRepository
 import com.visionaid.app.domain.router.IntentAction
 import com.visionaid.app.domain.router.RouterEngine
 import com.visionaid.app.util.TtsManager
+import android.graphics.BitmapFactory
+import android.util.Base64
+import com.visionaid.app.data.face.FaceMemoryRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -67,7 +70,8 @@ class ChatViewModel(
     private val ttsManager: TtsManager,
     private val vibrator: Vibrator,
     private val routerEngine: RouterEngine,
-    private val healthRepo: DeviceHealthRepository? = null
+    private val healthRepo: DeviceHealthRepository? = null,
+    private val faceMemoryRepo: FaceMemoryRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -381,19 +385,52 @@ class ChatViewModel(
         _uiState.update { it.copy(isProcessing = true) }
 
         viewModelScope.launch {
+            var localFaceAnnouncement: String? = null
             try {
+                if (faceMemoryRepo != null) {
+                    val cleanBase64 = if (base64.contains(",")) base64.substringAfter(",") else base64
+                    val bytes = Base64.decode(cleanBase64, Base64.DEFAULT)
+                    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    if (bitmap != null) {
+                        val match = faceMemoryRepo.recognizeFaceInBitmap(bitmap)
+                        if (match != null) {
+                            localFaceAnnouncement = "${match.first.name} is standing in front of you."
+                            Log.i("ChatViewModel", "Biometric match found: ${match.first.name} (${match.second})")
+                            ttsManager.speak(localFaceAnnouncement)
+                            addMessage(ChatMessage(sender = "ai", text = localFaceAnnouncement, imageUrl = dataUri))
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Face recognition error: ${e.message}")
+            }
+
+            try {
+                val effectivePrompt = if (localFaceAnnouncement != null) {
+                    "$prompt. Note: Local scan identified $localFaceAnnouncement."
+                } else {
+                    prompt
+                }
+
                 val response = apiService.analyzeVision(
-                    VisionRequest(image = dataUri, prompt = prompt, source = "phone")
+                    VisionRequest(image = dataUri, prompt = effectivePrompt, source = "phone")
                 )
                 if (response.isSuccessful && response.body() != null) {
                     val desc = response.body()?.description ?: "No description available."
-                    addMessage(ChatMessage(sender = "ai", text = desc, imageUrl = dataUri))
-                    ttsManager.speak(desc)
-                } else {
+                    if (localFaceAnnouncement == null) {
+                        addMessage(ChatMessage(sender = "ai", text = desc, imageUrl = dataUri))
+                        ttsManager.speak(desc)
+                    } else {
+                        addMessage(ChatMessage(sender = "ai", text = desc))
+                        ttsManager.speak(desc)
+                    }
+                } else if (localFaceAnnouncement == null) {
                     addMessage(ChatMessage(sender = "ai", text = "Could not analyze the scene."))
                 }
             } catch (e: Exception) {
-                addMessage(ChatMessage(sender = "ai", text = "Network error analyzing image."))
+                if (localFaceAnnouncement == null) {
+                    addMessage(ChatMessage(sender = "ai", text = "Network error analyzing image."))
+                }
             } finally {
                 _uiState.update { it.copy(isProcessing = false) }
             }
@@ -443,12 +480,13 @@ class ChatViewModelFactory(
     private val ttsManager: TtsManager,
     private val vibrator: Vibrator,
     private val routerEngine: RouterEngine,
-    private val healthRepo: DeviceHealthRepository? = null
+    private val healthRepo: DeviceHealthRepository? = null,
+    private val faceMemoryRepo: FaceMemoryRepository? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ChatViewModel(apiService, sseService, ttsManager, vibrator, routerEngine, healthRepo) as T
+            return ChatViewModel(apiService, sseService, ttsManager, vibrator, routerEngine, healthRepo, faceMemoryRepo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

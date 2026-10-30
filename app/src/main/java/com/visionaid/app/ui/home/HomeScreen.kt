@@ -25,7 +25,7 @@ import com.visionaid.app.ui.theme.SuccessColor
 fun HomeScreen(
     uiState: HomeUiState,
     onAvatarClick: () -> Unit,
-    onOpenMobility: () -> Unit,
+    onOpenPeople: () -> Unit,
     onOpenFamily: () -> Unit,
     onOpenAiChat: () -> Unit
 ) {
@@ -38,7 +38,7 @@ fun HomeScreen(
         HomeHeader(username = uiState.currentUser, isDarkTheme = uiState.isDarkTheme, onAvatarClick = onAvatarClick)
         WidgetsRow(uiState = uiState)
         DeviceStatusSection(isCamOnline = uiState.isCamOnline, isMicOnline = uiState.isMicOnline)
-        FeaturesRow(onOpenMobility, onOpenFamily, onOpenAiChat)
+        FeaturesRow(onOpenPeople, onOpenFamily, onOpenAiChat)
     }
 }
 
@@ -190,7 +190,7 @@ fun PulsingDot(isOnline: Boolean) {
 }
 
 @Composable
-fun FeaturesRow(onOpenMobility: () -> Unit, onOpenFamily: () -> Unit, onOpenAiChat: () -> Unit) {
+fun FeaturesRow(onOpenPeople: () -> Unit, onOpenFamily: () -> Unit, onOpenAiChat: () -> Unit) {
     Column {
         Text("Features", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = LightMutedText)
         Spacer(modifier = Modifier.height(8.dp))
@@ -198,7 +198,7 @@ fun FeaturesRow(onOpenMobility: () -> Unit, onOpenFamily: () -> Unit, onOpenAiCh
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            FeatureActionCard("Mobility", Icons.Default.Explore, onOpenMobility, Modifier.weight(1f))
+            FeatureActionCard("People", Icons.Default.Face, onOpenPeople, Modifier.weight(1f))
             FeatureActionCard("Family", Icons.Default.Favorite, onOpenFamily, Modifier.weight(1f))
             FeatureActionCard("AI Chat", Icons.Default.Chat, onOpenAiChat, Modifier.weight(1f))
         }

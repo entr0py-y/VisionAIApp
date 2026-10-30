@@ -37,8 +37,10 @@ import com.visionaid.app.ui.family.FamilyScreen
 import com.visionaid.app.ui.family.FamilyViewModel
 import com.visionaid.app.ui.home.HomeScreen
 import com.visionaid.app.ui.home.HomeViewModel
-import com.visionaid.app.ui.mobility.MobilityScreen
-import com.visionaid.app.ui.mobility.MobilityViewModel
+import com.visionaid.app.data.face.FaceRecognitionManager
+import com.visionaid.app.ui.face.PeopleScreen
+import com.visionaid.app.ui.face.PeopleViewModel
+import android.os.Vibrator
 import com.visionaid.app.ui.settings.SettingsScreen
 import com.visionaid.app.ui.vision.VisionScreen
 import com.visionaid.app.ui.vision.VisionViewModel
@@ -50,9 +52,11 @@ fun MainScreen(
     viewModel: HomeViewModel, 
     chatViewModel: ChatViewModel, 
     visionViewModel: VisionViewModel,
-    mobilityViewModel: MobilityViewModel,
+    peopleViewModel: PeopleViewModel,
     familyViewModel: FamilyViewModel,
-    ttsManager: TtsManager
+    ttsManager: TtsManager,
+    recognitionManager: FaceRecognitionManager,
+    vibrator: Vibrator
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val chatUiState by chatViewModel.uiState.collectAsState()
@@ -61,7 +65,7 @@ fun MainScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     
     // Bottom Sheet States
-    var showMobilitySheet by remember { mutableStateOf(false) }
+    var showPeopleSheet by remember { mutableStateOf(false) }
     var showFamilySheet by remember { mutableStateOf(false) }
     var showVisionSheet by remember { mutableStateOf(false) }
     
@@ -74,8 +78,8 @@ fun MainScreen(
     BackHandler(enabled = showVisionSheet) {
         showVisionSheet = false
     }
-    BackHandler(enabled = showMobilitySheet) {
-        showMobilitySheet = false
+    BackHandler(enabled = showPeopleSheet) {
+        showPeopleSheet = false
     }
     BackHandler(enabled = showFamilySheet) {
         showFamilySheet = false
@@ -89,8 +93,7 @@ fun MainScreen(
         chatViewModel.chatEvents.collect { event ->
             when (event) {
                 is ChatEvent.TriggerNavigation -> {
-                    showMobilitySheet = true
-                    mobilityViewModel.navigateTo(event.destination, context)
+                    ttsManager.speak("Navigation to ${event.destination} requested.")
                 }
                 else -> {}
             }
@@ -152,7 +155,7 @@ fun MainScreen(
                                 viewModel.toggleAuthModal()
                             }
                         },
-                        onOpenMobility = { showMobilitySheet = true },
+                        onOpenPeople = { showPeopleSheet = true },
                         onOpenFamily = { showFamilySheet = true },
                         onOpenAiChat = { chatViewModel.openChat() } 
                     )
@@ -186,9 +189,15 @@ fun MainScreen(
             }
         }
 
-        if (showMobilitySheet) {
-            ModalBottomSheet(onDismissRequest = { showMobilitySheet = false }, sheetState = sheetState) {
-                MobilityScreen(viewModel = mobilityViewModel)
+        if (showPeopleSheet) {
+            ModalBottomSheet(onDismissRequest = { showPeopleSheet = false }, sheetState = sheetState) {
+                PeopleScreen(
+                    viewModel = peopleViewModel,
+                    recognitionManager = recognitionManager,
+                    ttsManager = ttsManager,
+                    vibrator = vibrator,
+                    onClose = { showPeopleSheet = false }
+                )
             }
         }
 

@@ -33,6 +33,10 @@ import com.visionaid.app.ui.theme.VisionAIDTheme
 import com.visionaid.app.ui.vision.VisionViewModel
 import com.visionaid.app.ui.vision.VisionViewModelFactory
 import com.visionaid.app.util.TtsManager
+import com.visionaid.app.data.face.FaceMemoryRepository
+import com.visionaid.app.data.face.FaceRecognitionManager
+import com.visionaid.app.ui.face.PeopleViewModel
+import com.visionaid.app.ui.face.PeopleViewModelFactory
 
 class MainActivity : ComponentActivity() {
 
@@ -42,6 +46,12 @@ class MainActivity : ComponentActivity() {
     private val sseService = SseGhostClickService()
     private val healthRepo = DeviceHealthRepository(NetworkClient.apiService)
     private val routerEngine = RouterEngine(NetworkClient.apiService)
+    private val recognitionManager by lazy { FaceRecognitionManager(applicationContext) }
+    private val faceMemoryRepo by lazy { FaceMemoryRepository(applicationContext, recognitionManager) }
+
+    private val peopleViewModel: PeopleViewModel by viewModels {
+        PeopleViewModelFactory(faceMemoryRepo, ttsManager)
+    }
 
     // ViewModels generated dynamically tracking process dependencies
     private val homeViewModel: HomeViewModel by viewModels {
@@ -77,7 +87,8 @@ class MainActivity : ComponentActivity() {
             ttsManager = ttsManager,
             vibrator = getVibratorInstance(),
             routerEngine = routerEngine,
-            healthRepo = healthRepo
+            healthRepo = healthRepo,
+            faceMemoryRepo = faceMemoryRepo
         )
     }
 
@@ -133,9 +144,11 @@ class MainActivity : ComponentActivity() {
                     viewModel = homeViewModel, 
                     chatViewModel = chatViewModel,
                     visionViewModel = visionViewModel,
-                    mobilityViewModel = mobilityViewModel,
+                    peopleViewModel = peopleViewModel,
                     familyViewModel = familyViewModel,
-                    ttsManager = ttsManager
+                    ttsManager = ttsManager,
+                    recognitionManager = recognitionManager,
+                    vibrator = getVibratorInstance()
                 )
             }
         }
@@ -144,5 +157,6 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         ttsManager.shutdown()
+        recognitionManager.close()
     }
 }
