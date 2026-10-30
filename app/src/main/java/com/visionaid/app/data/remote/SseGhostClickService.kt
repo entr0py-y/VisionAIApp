@@ -34,6 +34,9 @@ class SseGhostClickService {
     private val _isConnected = MutableStateFlow(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
+    private val _isHardwareRecording = MutableStateFlow(false)
+    val isHardwareRecording: StateFlow<Boolean> = _isHardwareRecording.asStateFlow()
+
     private var eventSource: EventSource? = null
     private val sseUrl: String
         get() = NetworkClient.baseUrl + "api/stream"
@@ -65,9 +68,16 @@ class SseGhostClickService {
                         val json = JsonParser.parseString(data).asJsonObject
                         val eventType = json.get("event")?.asString ?: type
                         when (eventType) {
-                            "HARDWARE_BTN_TOUCHED" -> _events.emit(SseHardwareEvent.HardwareBtnTouched)
-                            "HARDWARE_BTN_RELEASED" -> _events.emit(SseHardwareEvent.HardwareBtnReleased)
+                            "HARDWARE_BTN_TOUCHED" -> {
+                                _isHardwareRecording.value = true
+                                _events.emit(SseHardwareEvent.HardwareBtnTouched)
+                            }
+                            "HARDWARE_BTN_RELEASED" -> {
+                                _isHardwareRecording.value = false
+                                _events.emit(SseHardwareEvent.HardwareBtnReleased)
+                            }
                             "AUDIO_RESULT" -> {
+                                _isHardwareRecording.value = false
                                 val dataObj = json.getAsJsonObject("data")
                                 val transcript = dataObj?.get("transcript")?.asString ?: ""
                                 val text = dataObj?.get("text")?.asString ?: ""
@@ -83,12 +93,14 @@ class SseGhostClickService {
             override fun onClosed(eventSource: EventSource) {
                 Log.d("SseGhostClick", "SSE Connection closed")
                 _isConnected.value = false
+                _isHardwareRecording.value = false
                 scheduleReconnect()
             }
 
             override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
                 Log.e("SseGhostClick", "SSE Connection failed", t)
                 _isConnected.value = false
+                _isHardwareRecording.value = false
                 scheduleReconnect()
             }
         })
@@ -111,5 +123,6 @@ class SseGhostClickService {
     fun stop() {
         eventSource?.cancel()
         _isConnected.value = false
+        _isHardwareRecording.value = false
     }
 }

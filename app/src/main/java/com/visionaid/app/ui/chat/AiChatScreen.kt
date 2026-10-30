@@ -2,7 +2,10 @@ package com.visionaid.app.ui.chat
 
 import android.graphics.BitmapFactory
 import android.util.Base64
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -23,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -70,10 +74,12 @@ fun AiChatScreen(
         }
     }
 
-    // Auto-scroll on new message
+    // Smooth Auto-scroll on new message
     LaunchedEffect(uiState.messages.size, uiState.isProcessing) {
         if (uiState.messages.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.messages.size - 1)
+            coroutineScope.launch {
+                listState.animateScrollToItem(uiState.messages.size - 1)
+            }
         }
     }
 
@@ -88,7 +94,7 @@ fun AiChatScreen(
             .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
     ) {
-        // Header
+        // Header with smooth Back button ripple
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -109,7 +115,7 @@ fun AiChatScreen(
 
         HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-        // Message List
+        // Message List with Item Animations
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -120,7 +126,15 @@ fun AiChatScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(uiState.messages) { message ->
-                MessageBubble(message)
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn(animationSpec = tween(250)) + slideInVertically(
+                        initialOffsetY = { 40 },
+                        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy)
+                    )
+                ) {
+                    MessageBubble(message)
+                }
             }
             if (uiState.isProcessing) {
                 item {
@@ -183,9 +197,19 @@ fun AiChatScreen(
                     maxLines = 3
                 )
 
-                // Mic Button (Inline)
-                val micColor = if (uiState.isRecording) Color.Red else contentColor
-                
+                // Mic Button (Inline with glowing pulsing red ring when recording)
+                val isRecording = uiState.isRecording
+                val infiniteTransition = rememberInfiniteTransition()
+                val pulseScale by infiniteTransition.animateFloat(
+                    initialValue = 1f,
+                    targetValue = if (isRecording) 1.2f else 1f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(600, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "mic_pulse"
+                )
+
                 IconButton(
                     onClick = {
                         if (uiState.isRecording) {
@@ -193,12 +217,21 @@ fun AiChatScreen(
                         } else {
                             viewModel.startListening(context)
                         }
-                    }
+                    },
+                    modifier = Modifier
+                        .graphicsLayer {
+                            scaleX = if (isRecording) pulseScale else 1f
+                            scaleY = if (isRecording) pulseScale else 1f
+                        }
+                        .background(
+                            color = if (isRecording) Color(0xFFE53935) else Color.Transparent,
+                            shape = CircleShape
+                        )
                 ) {
                     Icon(
                         Icons.Default.Mic, 
                         contentDescription = "Voice Input", 
-                        tint = micColor
+                        tint = if (isRecording) Color.White else contentColor
                     )
                 }
 

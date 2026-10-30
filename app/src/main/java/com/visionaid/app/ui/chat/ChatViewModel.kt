@@ -20,6 +20,7 @@ import com.visionaid.app.data.model.VisionRequest
 import com.visionaid.app.data.remote.SseGhostClickService
 import com.visionaid.app.data.remote.SseHardwareEvent
 import com.visionaid.app.data.remote.VisionApiService
+import com.visionaid.app.data.repository.DeviceHealthRepository
 import com.visionaid.app.domain.router.IntentAction
 import com.visionaid.app.domain.router.RouterEngine
 import com.visionaid.app.util.TtsManager
@@ -60,7 +61,8 @@ class ChatViewModel(
     private val sseService: SseGhostClickService,
     private val ttsManager: TtsManager,
     private val vibrator: Vibrator,
-    private val routerEngine: RouterEngine
+    private val routerEngine: RouterEngine,
+    private val healthRepo: DeviceHealthRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
@@ -73,6 +75,15 @@ class ChatViewModel(
 
     init {
         observeSseEvents()
+        observeHardwareRecordingState()
+    }
+
+    private fun observeHardwareRecordingState() {
+        viewModelScope.launch {
+            sseService.isHardwareRecording.collect { recording ->
+                _uiState.update { it.copy(isRecording = recording) }
+            }
+        }
     }
 
     private fun observeSseEvents() {
@@ -232,31 +243,38 @@ class ChatViewModel(
 
     private suspend fun handleVisionInChat(prompt: String) {
         _uiState.update { it.copy(isProcessing = true) }
-        try {
-            val response = withTimeoutOrNull(2000) {
-                apiService.triggerHardwareCamera(HardwareCameraRequest(prompt))
-            }
-            if (response != null && response.isSuccessful && response.body() != null && !response.body()?.image.isNullOrBlank()) {
-                val body = response.body()!!
-                val imageB64 = body.image
-                val desc = body.description ?: "Captured scene image."
-                
-                addMessage(
-                    ChatMessage(
-                        sender = "ai", 
-                        text = desc, 
-                        imageUrl = "data:image/jpeg;base64,$imageB64"
+        val isCamOnline = healthRepo?.healthState?.value?.camOnline == true
+
+        // Priority 1: ESP32-CAM if online
+        if (isCamOnline) {
+            try {
+                Log.d("ChatViewModel", "ESP32-CAM is online. Triggering hardware camera...")
+                val response = withTimeoutOrNull(3000) {
+                    apiService.triggerHardwareCamera(HardwareCameraRequest(prompt))
+                }
+                if (response != null && response.isSuccessful && response.body() != null && !response.body()?.image.isNullOrBlank()) {
+                    val body = response.body()!!
+                    val imageB64 = body.image
+                    val desc = body.description ?: "Captured scene image from ESP32-CAM."
+                    
+                    addMessage(
+                        ChatMessage(
+                            sender = "ai", 
+                            text = desc, 
+                            imageUrl = "data:image/jpeg;base64,$imageB64"
+                        )
                     )
-                )
-                ttsManager.speak(desc)
-                _uiState.update { it.copy(isProcessing = false) }
-                return
+                    ttsManager.speak(desc)
+                    _uiState.update { it.copy(isProcessing = false) }
+                    return
+                }
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "ESP32-CAM trigger failed, falling back to phone camera", e)
             }
-        } catch (e: Exception) {
-            Log.w("ChatViewModel", "Hardware camera unavailable, falling back to silent phone camera", e)
         }
 
-        // ESP32-CAM is offline -> Automatically trigger silent phone camera capture!
+        // Priority 2 / Fallback: Silent Phone Camera Frame Capture
+        Log.d("ChatViewModel", "Falling back to phone camera capture...")
         _uiState.update { it.copy(isProcessing = false) }
         _chatEvents.emit(ChatEvent.TriggerPhoneCamera(prompt))
     }
@@ -327,12 +345,13 @@ class ChatViewModelFactory(
     private val sseService: SseGhostClickService,
     private val ttsManager: TtsManager,
     private val vibrator: Vibrator,
-    private val routerEngine: RouterEngine
+    private val routerEngine: RouterEngine,
+    private val healthRepo: DeviceHealthRepository? = null
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return ChatViewModel(apiService, sseService, ttsManager, vibrator, routerEngine) as T
+            return ChatViewModel(apiService, sseService, ttsManager, vibrator, routerEngine, healthRepo) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

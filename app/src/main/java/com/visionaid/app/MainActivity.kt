@@ -74,7 +74,8 @@ class MainActivity : ComponentActivity() {
             sseService = sseService,
             ttsManager = ttsManager,
             vibrator = getVibratorInstance(),
-            routerEngine = routerEngine
+            routerEngine = routerEngine,
+            healthRepo = healthRepo
         )
     }
 
