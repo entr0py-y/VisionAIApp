@@ -249,21 +249,16 @@ class ChatViewModel(
         if (isCamOnline) {
             try {
                 Log.d("ChatViewModel", "ESP32-CAM is online. Triggering hardware camera...")
-                val response = withTimeoutOrNull(3000) {
+                val response = withTimeoutOrNull(15000) {
                     apiService.triggerHardwareCamera(HardwareCameraRequest(prompt))
                 }
-                if (response != null && response.isSuccessful && response.body() != null && !response.body()?.image.isNullOrBlank()) {
+                if (response != null && response.isSuccessful && response.body() != null && !response.body()?.description.isNullOrBlank()) {
                     val body = response.body()!!
-                    val imageB64 = body.image
                     val desc = body.description ?: "Captured scene image from ESP32-CAM."
-                    
-                    addMessage(
-                        ChatMessage(
-                            sender = "ai", 
-                            text = desc, 
-                            imageUrl = "data:image/jpeg;base64,$imageB64"
-                        )
-                    )
+                    val imageUrl = body.image?.let { img ->
+                        if (img.startsWith("data:")) img else "data:image/jpeg;base64,$img"
+                    }
+                    addMessage(ChatMessage(sender = "ai", text = desc, imageUrl = imageUrl))
                     ttsManager.speak(desc)
                     _uiState.update { it.copy(isProcessing = false) }
                     return
