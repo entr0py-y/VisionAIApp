@@ -61,10 +61,21 @@ class LocalHardwareHubService : Service() {
 
         private var pendingCameraCapture: CompletableDeferred<String?>? = null
 
+        private var lastCamPingTimestamp: Long = 0L
+        private var lastMicPingTimestamp: Long = 0L
+
+        var latestCameraFrame: String? = null
+            private set
+        var latestFrameTimestamp: Long = 0L
+            private set
+
         fun isCameraConnected(): Boolean {
             val server = instance?.webSocketServer
-            return (server?.camConnection != null && server.camConnection?.isOpen == true) || 
-                   (server?.connections?.isNotEmpty() == true)
+            val hasCamConn = server?.camConnection != null && server.camConnection?.isOpen == true
+            val hasRecentPing = (System.currentTimeMillis() - lastCamPingTimestamp) < 15000L
+            val hasRecentFrame = (System.currentTimeMillis() - latestFrameTimestamp) < 30000L
+            val hasActiveSockets = server?.connections?.isNotEmpty() == true
+            return hasCamConn || hasRecentPing || (hasActiveSockets && hasRecentFrame)
         }
 
         fun triggerCameraCapture() {
@@ -78,12 +89,24 @@ class LocalHardwareHubService : Service() {
             }
         }
 
-        suspend fun captureImageFromCamera(timeoutMs: Long = 8000): String? {
+        suspend fun captureImageFromCamera(timeoutMs: Long = 10000): String? {
             val server = instance?.webSocketServer
-            val hasConnections = (server?.camConnection != null && server.camConnection?.isOpen == true) || 
-                                 (server?.connections?.isNotEmpty() == true)
+            val now = System.currentTimeMillis()
+
+            // Ultra-fast path: If a fresh ESP32-CAM frame arrived within the last 3.5 seconds, use it immediately!
+            if (!latestCameraFrame.isNullOrBlank() && (now - latestFrameTimestamp) < 3500L) {
+                Log.d("LocalHardwareHub", "Returning fresh cached ESP32-CAM frame (${now - latestFrameTimestamp}ms old)")
+                return latestCameraFrame
+            }
+
+            val hasConnections = isCameraConnected()
             if (!hasConnections) {
                 Log.w("LocalHardwareHub", "No camera connected to capture frame")
+                // Check if we have a slightly older cached frame (within 15s)
+                if (!latestCameraFrame.isNullOrBlank() && (now - latestFrameTimestamp) < 15000L) {
+                    Log.i("LocalHardwareHub", "Using cached frame from recently seen camera (${now - latestFrameTimestamp}ms old)")
+                    return latestCameraFrame
+                }
                 return null
             }
 
@@ -93,12 +116,26 @@ class LocalHardwareHubService : Service() {
             triggerCameraCapture()
 
             return try {
-                withTimeout(timeoutMs) {
+                val frame = withTimeout(timeoutMs) {
                     deferred.await()
+                }
+                if (!frame.isNullOrBlank()) {
+                    frame
+                } else if (!latestCameraFrame.isNullOrBlank() && (System.currentTimeMillis() - latestFrameTimestamp) < 25000L) {
+                    Log.w("LocalHardwareHub", "Capture was empty, falling back to recent cached frame")
+                    latestCameraFrame
+                } else {
+                    null
                 }
             } catch (e: Exception) {
                 Log.w("LocalHardwareHub", "captureImageFromCamera timed out after ${timeoutMs}ms", e)
-                null
+                // If live capture timed out, return recent cached frame if available
+                if (!latestCameraFrame.isNullOrBlank() && (System.currentTimeMillis() - latestFrameTimestamp) < 25000L) {
+                    Log.i("LocalHardwareHub", "Falling back to recent cached ESP32-CAM frame after timeout (${System.currentTimeMillis() - latestFrameTimestamp}ms old)")
+                    latestCameraFrame
+                } else {
+                    null
+                }
             } finally {
                 if (pendingCameraCapture === deferred) {
                     pendingCameraCapture = null
@@ -181,12 +218,16 @@ class LocalHardwareHubService : Service() {
 
         override fun onClose(conn: WebSocket, code: Int, reason: String, remote: Boolean) {
             Log.d("LocalHardwareHub", "ESP32 Disconnected: ${conn.remoteSocketAddress}")
-            if (conn == camConnection) camConnection = null
-            if (conn == micConnection) micConnection = null
-            isRecording = false
-            audioBuffer.reset()
-            isReceivingCamImage = false
-            camFrameBuffer.reset()
+            if (conn == camConnection) {
+                camConnection = null
+                isReceivingCamImage = false
+                camFrameBuffer.reset()
+            }
+            if (conn == micConnection) {
+                micConnection = null
+                isRecording = false
+                audioBuffer.reset()
+            }
         }
 
         override fun onMessage(conn: WebSocket, message: String) {
@@ -217,18 +258,23 @@ class LocalHardwareHubService : Service() {
                 }
                 message.contains("ESP32_MIC") || message.contains("MIC_PING") -> {
                     micConnection = conn
+                    lastMicPingTimestamp = System.currentTimeMillis()
                     onEvent(HardwareIntakeEvent.MicPing)
                 }
                 message.contains("ESP32_CAM") -> {
                     camConnection = conn
+                    lastCamPingTimestamp = System.currentTimeMillis()
                     onEvent(HardwareIntakeEvent.CamPing)
                 }
                 message.contains("CAM_IMAGE_END") -> {
                     isReceivingCamImage = false
                     camConnection = conn
+                    lastCamPingTimestamp = System.currentTimeMillis()
                     if (camFrameBuffer.size() > 0) {
                         val base64 = Base64.encodeToString(camFrameBuffer.toByteArray(), Base64.NO_WRAP)
                         val dataUri = "data:image/jpeg;base64,$base64"
+                        latestCameraFrame = dataUri
+                        latestFrameTimestamp = System.currentTimeMillis()
                         onEvent(HardwareIntakeEvent.CameraFrameReceived(dataUri))
                         pendingCameraCapture?.complete(dataUri)
                         camFrameBuffer.reset()
@@ -241,6 +287,7 @@ class LocalHardwareHubService : Service() {
                 message.contains("CAM_IMAGE") -> {
                     isReceivingCamImage = true
                     camConnection = conn
+                    lastCamPingTimestamp = System.currentTimeMillis()
                     camFrameBuffer.reset()
                     Log.d("LocalHardwareHub", "Starting CAM_IMAGE reception...")
                     onEvent(HardwareIntakeEvent.CamPing)
@@ -250,8 +297,9 @@ class LocalHardwareHubService : Service() {
                     pendingCameraCapture?.complete(null)
                     onEvent(HardwareIntakeEvent.CamPing)
                 }
-                message.contains("\"type\":\"sensors\"") || message.contains("\"type\": \"sensors\"") -> {
+                message.contains("sensors") -> {
                     micConnection = conn
+                    lastMicPingTimestamp = System.currentTimeMillis()
                     try {
                         val json = JSONObject(message)
                         val u = if (json.has("u")) {
@@ -274,13 +322,18 @@ class LocalHardwareHubService : Service() {
         override fun onMessage(conn: WebSocket, message: ByteBuffer) {
             val bytes = ByteArray(message.remaining())
             message.get(bytes)
-            if (conn == camConnection || isReceivingCamImage) {
+            if (conn == camConnection) {
                 camFrameBuffer.write(bytes)
-            } else if (conn == micConnection || isRecording) {
+            } else if (conn == micConnection) {
                 audioBuffer.write(bytes)
             } else {
-                if (isReceivingCamImage) camFrameBuffer.write(bytes)
-                else if (isRecording) audioBuffer.write(bytes)
+                if (isReceivingCamImage && !isRecording) {
+                    camConnection = conn
+                    camFrameBuffer.write(bytes)
+                } else if (isRecording) {
+                    micConnection = conn
+                    audioBuffer.write(bytes)
+                }
             }
         }
 

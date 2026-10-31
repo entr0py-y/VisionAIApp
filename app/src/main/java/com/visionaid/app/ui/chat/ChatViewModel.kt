@@ -140,9 +140,9 @@ class ChatViewModel(
                     try {
                         val rawStr = response.body()!!.string()
                         val json = JsonParser.parseString(rawStr).asJsonObject
-                        val text = json.get("text")?.asString
-                        val transcript = json.get("transcript")?.asString
-                        if (!transcript.isNullOrBlank() && !text.isNullOrBlank()) {
+                        val text = json.get("text")?.asString ?: ""
+                        val transcript = json.get("transcript")?.asString ?: ""
+                        if (transcript.isNotBlank()) {
                             handleAudioResult(transcript, text)
                         } else {
                             _uiState.update { it.copy(isProcessing = false) }
@@ -340,22 +340,35 @@ class ChatViewModel(
         if (isCamOnline) {
             try {
                 Log.d("ChatViewModel", "ESP32-CAM is online. Requesting local hardware camera frame...")
-                val localFrame = LocalHardwareHubService.captureImageFromCamera(8000)
+                val localFrame = LocalHardwareHubService.captureImageFromCamera(10000)
 
                 if (!localFrame.isNullOrBlank()) {
                     Log.d("ChatViewModel", "Received ESP32-CAM frame. Analyzing with Vision AI...")
                     analyzeLocalPhoneImage(localFrame, prompt)
                     return
                 } else {
-                    Log.w("ChatViewModel", "Timeout waiting for local ESP32-CAM frame, trying remote fallback...")
+                    Log.w("ChatViewModel", "Timeout or empty frame from local ESP32-CAM, retrying...")
                 }
             } catch (e: Exception) {
-                Log.w("ChatViewModel", "Local ESP32-CAM trigger failed, falling back...", e)
+                Log.w("ChatViewModel", "Local ESP32-CAM trigger failed, retrying...", e)
+            }
+
+            // Retry local ESP32-CAM once more before giving up
+            try {
+                Log.d("ChatViewModel", "Retrying ESP32-CAM capture...")
+                val retryFrame = LocalHardwareHubService.captureImageFromCamera(6000)
+                if (!retryFrame.isNullOrBlank()) {
+                    Log.d("ChatViewModel", "Received ESP32-CAM frame on retry. Analyzing with Vision AI...")
+                    analyzeLocalPhoneImage(retryFrame, prompt)
+                    return
+                }
+            } catch (e: Exception) {
+                Log.w("ChatViewModel", "Retry ESP32-CAM capture failed", e)
             }
 
             // Fallback to cloud trigger if available
             try {
-                val response = withTimeoutOrNull(10000) {
+                val response = withTimeoutOrNull(5000) {
                     apiService.triggerHardwareCamera(HardwareCameraRequest(prompt))
                 }
                 if (response != null && response.isSuccessful && response.body() != null && !response.body()?.description.isNullOrBlank()) {
@@ -372,10 +385,18 @@ class ChatViewModel(
             } catch (e: Exception) {
                 Log.w("ChatViewModel", "Remote ESP32-CAM trigger failed", e)
             }
+
+            // IMPORTANT: When ESP32-CAM is connected/online, NEVER silently switch to phone camera!
+            Log.w("ChatViewModel", "ESP32-CAM frame capture failed after retries. Notifying user without phone camera fallback.")
+            val failureMsg = "Camera frame was not received. Please point your ESP32 camera and ask again."
+            addMessage(ChatMessage(sender = "ai", text = failureMsg))
+            ttsManager.speak(failureMsg)
+            _uiState.update { it.copy(isProcessing = false) }
+            return
         }
 
-        // Priority 2 / Fallback: Silent Phone Camera Frame Capture
-        Log.d("ChatViewModel", "Falling back to phone camera capture...")
+        // Priority 2: Silent Phone Camera Frame Capture ONLY when completely disconnected from ESP32-CAM (standalone mode)
+        Log.d("ChatViewModel", "No hardware camera detected. Using phone camera capture...")
         _uiState.update { it.copy(isProcessing = false) }
         _chatEvents.emit(ChatEvent.TriggerPhoneCamera(prompt))
     }
